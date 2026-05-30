@@ -4,7 +4,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.1.0-7c3aed.svg)
 ![Claude](https://img.shields.io/badge/Claude-Skill-orange.svg)
-![Best Model](https://img.shields.io/badge/best%20model-Claude%204.8%20Opus-d97706.svg)
+![Best Model](https://img.shields.io/badge/best%20model-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 **黑哥算命 · 四柱八字精确排盘与系统推演 | A Bazi engine that computes first, then reasons**
@@ -177,11 +177,11 @@ python3 ~/.claude/skills/bazi-mingli/scripts/paipan.py 1990 5 15 14 30 --gender 
 
 这个技能**只适配了 Claude Code**，原因很直接：
 
-**它的最佳模型是 Claude 4.8 Opus。**
+**它的最佳模型是 Claude Opus 4.8。**
 
-八字推演不是查表，是一条长链推理：旺衰要综合月令通根党众、取用神要权衡调候扶抑、格局要判成败救应、岁运要看引动喜忌，每一步都依赖前一步的结论，还要全程"一象多看、孤证不立"。这种**多层嵌套、需要稳定保持长链逻辑**的任务，对模型推理深度要求很高。实测下来，Claude 4.8 Opus 在保持方法论纪律、不丢依据、不下无据死断这几点上明显更稳。
+八字推演不是查表，是一条长链推理：旺衰要综合月令通根党众、取用神要权衡调候扶抑、格局要判成败救应、岁运要看引动喜忌，每一步都依赖前一步的结论，还要全程"一象多看、孤证不立"。这种**多层嵌套、需要稳定保持长链逻辑**的任务，对模型推理深度要求很高。实测下来，Claude Opus 4.8 在保持方法论纪律、不丢依据、不下无据死断这几点上明显更稳。
 
-所以这一版没有去适配其他 Agent，而是把 Claude Code + Opus 这条路走深走透。技能核心是 `SKILL.md`（方法论指令）+ `paipan.py`（排盘脚本）+ `references/`（知识底座），结构清晰，未来要移植并不难，但**当下的体验是按 Claude 4.8 Opus 调校的**。
+所以这一版没有去适配其他 Agent，而是把 Claude Code + Opus 这条路走深走透。技能核心是 `SKILL.md`（方法论指令）+ `paipan.py`（排盘脚本）+ `references/`（知识底座），结构清晰，未来要移植并不难，但**当下的体验是按 Claude Opus 4.8 调校的**。
 
 ---
 
@@ -206,7 +206,7 @@ HeiGe-SuanMing/
 
 ## 系统要求 Requirements
 
-- Claude Code（推荐模型 Claude 4.8 Opus）
+- Claude Code（推荐模型 Claude Opus 4.8）
 - Python 3.7+
 - `lunar_python >= 1.4.0`
 
@@ -220,7 +220,7 @@ HeiGe-SuanMing/
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings. Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Why Claude Code only:** its best model is **Claude 4.8 Opus**. Bazi reasoning is one long dependent chain, and Opus is noticeably steadier at holding methodological discipline and never dropping the evidence behind a verdict. This release goes deep on Claude Code + Opus rather than spreading thin across agents.
+**Why Claude Code only:** its best model is **Claude Opus 4.8**. Bazi reasoning is one long dependent chain, and Opus is noticeably steadier at holding methodological discipline and never dropping the evidence behind a verdict. This release goes deep on Claude Code + Opus rather than spreading thin across agents.
 
 ```bash
 git clone https://github.com/HeiGeAi/HeiGe-SuanMing.git ~/.claude/skills/bazi-mingli
