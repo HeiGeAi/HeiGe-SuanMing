@@ -1,0 +1,3 @@
+# HeiGe-SuanMing 排盘引擎依赖
+# 精确干支推算（立春定年 / 节气定月 / 闰月 / 真太阳时基准）由 lunar_python 提供
+lunar_python>=1.4.0
