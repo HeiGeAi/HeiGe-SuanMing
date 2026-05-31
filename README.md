@@ -99,6 +99,13 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 | `05_geju.md` | 八格取法、成败救应、从格 / 专旺 / 化气等特殊格局 |
 | `06_shensha.md` | 常用神煞查法、吉凶象义、使用原则 |
 | `07_keshihua_baoshu.md` | 可视化命书：何时征询、HTML 结构模板、字体可靠性铁律、五行配色映射 |
+| `08_gufu_duanyu.md` | 古籍赋文经验断语：渊海 / 三命 / 神峰赋诀分维度精选，短引＋白话＋调用提示 |
+| `09_shenfeng_tongkao.md` | 神峰通考：病药说、动静说、盖头截脚、伤官伤尽辨、十干体象、辟谬批判 |
+| `10_mingli_yueyan.md` | 命理约言理性派：生克扶抑总纲、用神精神说、格局正变、神煞纳音小运胎元祛魅清单 |
+| `11_sanming_tonghui.md` | 三命通会：旺相休囚死五态、寄生十二宫体用、十神立名、格局神煞集成纲目、大运太岁取法 |
+| `12_dianji_yuanliu.md` | 典籍源流导航：宋明清民国 12 部命书的贡献、对应篇目、公版出处与调用路径 |
+
+其中 `01-07` 是推演主干，`08-12` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
 
 ---
 
@@ -298,11 +305,18 @@ HeiGe-SuanMing/
 │   ├── 04_shishen_xiangyi.md
 │   ├── 05_geju.md
 │   ├── 06_shensha.md
-│   └── 07_keshihua_baoshu.md     # 可视化命书：一页 HTML 报告产出规范
+│   ├── 07_keshihua_baoshu.md     # 可视化命书：一页 HTML 报告产出规范
+│   ├── 08_gufu_duanyu.md         # 古籍赋文经验断语：渊海 / 三命 / 神峰赋诀精选
+│   ├── 09_shenfeng_tongkao.md    # 神峰通考：病药说、动静说、盖头截脚、十干体象
+│   ├── 10_mingli_yueyan.md       # 命理约言：理性派论法与祛魅清单
+│   ├── 11_sanming_tonghui.md     # 三命通会：旺衰五态、十二宫、十神、格局神煞纲目
+│   └── 12_dianji_yuanliu.md      # 典籍源流与调用路径导航地图
 ├── examples/
 │   └── 示例-八字命书.html         # 可视化命书样例（虚拟生辰，脱敏教学向）
 ├── assets/
-│   └── cover.png                 # README 题图
+│   ├── cover.png                 # README 题图
+│   ├── visual-hero.jpg           # 可视化命书 · 卷首命格诗
+│   └── visual-sig.jpg            # 可视化命书 · 签名时刻
 ├── requirements.txt
 ├── LICENSE
 └── README.md
@@ -354,7 +368,7 @@ This project is a research and study tool for traditional Chinese metaphysics (B
 
 ## 致谢 | Credits
 
-由 [@blakexu](https://github.com/blakexu) 打造。排盘精度由 [lunar_python](https://github.com/6tail/lunar-python) 提供支撑。方法论参考《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》等命理经典。
+由 [@blakexu](https://github.com/blakexu) 打造。排盘精度由 [lunar_python](https://github.com/6tail/lunar-python) 提供支撑。方法论参考《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等命理经典，源流与公版出处见 [`references/12_dianji_yuanliu.md`](./references/12_dianji_yuanliu.md)。
 
 ## 许可证 | License
 
