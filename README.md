@@ -3,15 +3,15 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-1.1.0-7c3aed.svg)
-![Claude](https://img.shields.io/badge/Claude-Skill-orange.svg)
-![Best Model](https://img.shields.io/badge/best%20model-Claude%20Opus%204.8-d97706.svg)
+![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
+![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 **黑哥算命 · 四柱八字精确排盘与系统推演 | A Bazi engine that computes first, then reasons**
 
 像做技术分析一样算命：排盘交给脚本算准，推演按固定方法论逐层展开，每个结论都标注依据。
 
-[这是什么](#这是什么-what-is-this) • [为什么不一样](#为什么不一样-why-its-different) • [核心方法论](#核心方法论-methodology) • [命盘样例](#命盘样例-sample) • [快速开始](#快速开始-quick-start) • [为什么只做-claude-code](#为什么只做-claude-code-why-claude-code-only) • [免责声明](#免责声明-disclaimer)
+[这是什么](#这是什么-what-is-this) • [为什么不一样](#为什么不一样-why-its-different) • [核心方法论](#核心方法论-methodology) • [命盘样例](#命盘样例-sample) • [快速开始](#快速开始-quick-start) • [多 Agent 支持](#多-agent-支持-works-with-any-agent) • [免责声明](#免责声明-disclaimer)
 
 </div>
 
@@ -19,7 +19,7 @@
 
 ## 这是什么 What is this
 
-HeiGe-SuanMing 是一个跑在 Claude Code 里的**四柱八字命理引擎**。它把算命这件事拆成两层：
+HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文件 + 能调 Python"的 AI Agent 里（推荐 Claude Code + Claude Opus 4.8）。它把算命这件事拆成两层：
 
 **第一层：排盘用脚本算，绝不靠模型手推。**
 `scripts/paipan.py` 基于 `lunar_python` 做精确干支推算，自动处理三件最容易错的事：以**立春**定年柱（不是正月初一）、以**节气**定月柱（不是农历月）、按**真太阳时**校正时柱。再往上算齐藏干、十神、纳音、长生十二宫、旬空、胎元命宫身宫、地支刑冲合会、五行力量加权、神煞、大运流年。
@@ -134,6 +134,8 @@ HeiGe-SuanMing 是一个跑在 Claude Code 里的**四柱八字命理引擎**。
 
 ## 快速开始 Quick Start
 
+下面是**推荐路径：Claude Code**。用 Codex / Cursor / Cline 等其他 Agent 的，跳到 [多 Agent 支持](#多-agent-支持-works-with-any-agent)。
+
 ### 1. 安装技能
 
 把技能克隆到 Claude Code 的 skills 目录：
@@ -173,15 +175,77 @@ python3 ~/.claude/skills/bazi-mingli/scripts/paipan.py 1990 5 15 14 30 --gender 
 
 ---
 
-## 为什么只做 Claude Code Why Claude Code only
+## 多 Agent 支持 Works with any agent
 
-这个技能**只适配了 Claude Code**，原因很直接：
+技能核心是三块文本加一个脚本，**不绑定任何特定 Agent**：`SKILL.md`（十步方法论指令）+ `scripts/paipan.py`（排盘引擎）+ `references/`（命理知识底座）。任何"能读本地文件 + 能跑 Python"的 AI Agent，都能驱动它排盘推演。
 
-**它的最佳模型是 Claude Opus 4.8。**
+先做通用两步：
+
+```bash
+# 1. 克隆到本地任意目录
+git clone https://github.com/HeiGeAi/HeiGe-SuanMing.git
+
+# 2. 安装排盘依赖
+pip3 install -r HeiGe-SuanMing/requirements.txt
+```
+
+第三步，把这段指引接进你的 Agent 规则文件：
+
+```text
+排八字时严格遵循 HeiGe-SuanMing/SKILL.md 的十步方法论；
+排盘一律调用 HeiGe-SuanMing/scripts/paipan.py，不靠模型手推；
+每条断语必须标注推理依据，孤证不立。
+```
+
+规则文件位置因 Agent 而异：
+
+<details>
+<summary><b>Codex（OpenAI）</b></summary>
+
+写进项目根目录的 `AGENTS.md`，或全局 `~/.codex/AGENTS.md`。Codex 启动时自动加载，之后直接说"排个八字"即可。
+</details>
+
+<details>
+<summary><b>Cursor</b></summary>
+
+在 `.cursor/rules/` 下新建一条规则文件（`.mdc`），或写进项目根目录的 `.cursorrules`。
+</details>
+
+<details>
+<summary><b>Cline</b></summary>
+
+写进工作区根目录的 `.clinerules`（单文件或同名文件夹均可）。
+</details>
+
+<details>
+<summary><b>Windsurf</b></summary>
+
+写进 `.windsurf/rules/` 下的规则文件，或旧版 `.windsurfrules`。
+</details>
+
+<details>
+<summary><b>Continue</b></summary>
+
+把克隆目录加入上下文，并在 `config` 的 `rules` 里补一条上面的指引。
+</details>
+
+<details>
+<summary><b>GitHub Copilot</b></summary>
+
+写进 `.github/copilot-instructions.md`，对整个仓库生效。
+</details>
+
+<details>
+<summary><b>通用方式（任意 Agent）</b></summary>
+
+不依赖规则文件也行：直接对 Agent 说"读取 HeiGe-SuanMing/SKILL.md 并严格按它执行，排盘调用 scripts/paipan.py"，它就能照着跑。排盘脚本本身也能脱离对话单独运行（见上方[快速开始](#快速开始-quick-start)）。
+</details>
+
+### 为什么推荐 Claude Code + Claude Opus 4.8
+
+能跑归能跑，但**最佳体验仍然是 Claude Code 搭 Claude Opus 4.8**。
 
 八字推演不是查表，是一条长链推理：旺衰要综合月令通根党众、取用神要权衡调候扶抑、格局要判成败救应、岁运要看引动喜忌，每一步都依赖前一步的结论，还要全程"一象多看、孤证不立"。这种**多层嵌套、需要稳定保持长链逻辑**的任务，对模型推理深度要求很高。实测下来，Claude Opus 4.8 在保持方法论纪律、不丢依据、不下无据死断这几点上明显更稳。
-
-所以这一版没有去适配其他 Agent，而是把 Claude Code + Opus 这条路走深走透。技能核心是 `SKILL.md`（方法论指令）+ `paipan.py`（排盘脚本）+ `references/`（知识底座），结构清晰，未来要移植并不难，但**当下的体验是按 Claude Opus 4.8 调校的**。
 
 ---
 
@@ -189,7 +253,7 @@ python3 ~/.claude/skills/bazi-mingli/scripts/paipan.py 1990 5 15 14 30 --gender 
 
 ```
 HeiGe-SuanMing/
-├── SKILL.md                      # 主提示词：十步方法论与输出结构（Claude 读这个）
+├── SKILL.md                      # 主提示词：十步方法论与输出结构（你的 Agent 读这个）
 ├── scripts/
 │   └── paipan.py                 # 精确排盘引擎（基于 lunar_python）
 ├── references/                   # 命理知识底座，推演时按需调用
@@ -206,7 +270,7 @@ HeiGe-SuanMing/
 
 ## 系统要求 Requirements
 
-- Claude Code（推荐模型 Claude Opus 4.8）
+- 任意"能读文件 + 跑 Python"的 AI Agent（推荐 Claude Code + Claude Opus 4.8）
 - Python 3.7+
 - `lunar_python >= 1.4.0`
 
@@ -214,20 +278,22 @@ HeiGe-SuanMing/
 
 ## English
 
-**HeiGe-SuanMing** is a Bazi (Four Pillars of Destiny) engine that runs inside Claude Code. It splits fortune-telling into two layers so the whole thing stays reproducible and auditable.
+**HeiGe-SuanMing** is a Bazi (Four Pillars of Destiny) engine that runs inside any AI agent able to read local files and run Python (Claude Code + Claude Opus 4.8 recommended). It splits fortune-telling into two layers so the whole thing stays reproducible and auditable.
 
 **Layer 1 — the chart is computed, never hand-derived.** `scripts/paipan.py` uses `lunar_python` for precise stem-branch calculation, automatically handling the three things people get wrong most often: setting the year pillar by **Lichun** (start of spring, not lunar new year), the month pillar by **solar terms** (not the lunar month), and the hour pillar by **true solar time**. On top of that it computes hidden stems, ten gods, nayin, the twelve life stages, void branches, branch interactions (combinations / clashes / punishments), weighted five-element strength, symbolic stars, and the luck/annual pillars.
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings. Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Why Claude Code only:** its best model is **Claude Opus 4.8**. Bazi reasoning is one long dependent chain, and Opus is noticeably steadier at holding methodological discipline and never dropping the evidence behind a verdict. This release goes deep on Claude Code + Opus rather than spreading thin across agents.
+**Runs anywhere, tuned for Claude Code.** The core is just text plus a script — `SKILL.md` (methodology), `scripts/paipan.py` (chart engine), and `references/` (knowledge base) — so any agent that reads local files and runs Python can drive it (Codex, Cursor, Cline, Windsurf, Continue, Copilot, and so on): clone the repo, install deps, and point the agent's rules file at `SKILL.md`. That said, the best experience is **Claude Code + Claude Opus 4.8** — Bazi reasoning is one long dependent chain, and Opus is noticeably steadier at holding methodological discipline and never dropping the evidence behind a verdict.
+
+Claude Code setup:
 
 ```bash
 git clone https://github.com/HeiGeAi/HeiGe-SuanMing.git ~/.claude/skills/bazi-mingli
 pip3 install -r ~/.claude/skills/bazi-mingli/requirements.txt
 ```
 
-Then type `/bazi` in Claude Code and give it a birth date, time, and gender.
+Then type `/bazi` in Claude Code and give it a birth date, time, and gender. For other agents, see the [多 Agent 支持](#多-agent-支持-works-with-any-agent) section above.
 
 ---
 
