@@ -371,5 +371,62 @@ class TestIntegrationTrueSolar(unittest.TestCase):
         self.assertEqual(c["pillars"]["时"][1], "未")
 
 
+class TestIntegrationRobustness(unittest.TestCase):
+    """多样输入的鲁棒性：不崩溃 + 命盘不变量恒成立 + 可 JSON 序列化。
+    把子时双流派、真太阳东西经、立春边界、农历(含闰年)、极早/未来年、
+    自定义流年、阴阳年男女大运顺逆等边界场景固化进回归基准，
+    保证排盘引擎在异常边界上仍输出结构完整、自洽、可序列化的命盘。"""
+
+    SCENARIOS = {
+        "基准男命":        dict(year=1990, month=6, day=23, hour=0, minute=30, gender="male"),
+        "女命逆排":        dict(year=1990, month=6, day=23, hour=0, minute=30, gender="female"),
+        "子时流派1换日":   dict(year=1988, month=12, day=31, hour=23, minute=30, gender="male", zi_sect=1),
+        "子时流派2不换日": dict(year=1988, month=12, day=31, hour=23, minute=30, gender="male", zi_sect=2),
+        "真太阳东经121.5": dict(year=1990, month=6, day=23, hour=10, minute=49, gender="male", lng=121.5),
+        "真太阳西经75":    dict(year=1990, month=6, day=23, hour=10, minute=49, gender="male", lng=75.0),
+        "立春当天":        dict(year=2000, month=2, day=4, hour=12, minute=0, gender="male"),
+        "立春前夜":        dict(year=2000, month=2, day=3, hour=23, minute=0, gender="female"),
+        "农历输入":        dict(year=1990, month=9, day=1, hour=10, minute=0, gender="male", lunar=True),
+        "农历闰年":        dict(year=2023, month=4, day=15, hour=8, minute=0, gender="female", lunar=True),
+        "极早年1920":      dict(year=1920, month=1, day=1, hour=0, minute=0, gender="male"),
+        "未来年2050":      dict(year=2050, month=12, day=31, hour=23, minute=59, gender="female"),
+        "自定义流年":      dict(year=1990, month=6, day=23, hour=0, minute=30, gender="male", years=[2030, 5]),
+    }
+
+    def _assert_invariants(self, name, c):
+        # 1) 四柱齐全，每柱两字
+        for k in ("年", "月", "日", "时"):
+            self.assertIn(k, c["pillars"], f"{name}: 缺{k}柱")
+            self.assertEqual(len(c["pillars"][k]), 2, f"{name}: {k}柱非两字")
+        # 2) 五行个数总和=8（四干四支）
+        self.assertEqual(sum(c["wuxing_count"].values()), 8, f"{name}: 五行个数非8")
+        # 3) 同党+异党 ≈ 全盘五行力量总和（每个五行非同党即异党）
+        total = round(sum(c["wuxing_score"].values()), 2)
+        self.assertAlmostEqual(c["tong_dang"] + c["yi_dang"], total, places=1,
+                               msg=f"{name}: 同党+异党≠总力量")
+        # 4) 大运方向二选一
+        self.assertIn(c["yun_direction"], ("顺排", "逆排"), f"{name}: 大运方向异常")
+        # 5) 日主非空且首字为十干
+        self.assertTrue(c["day_master"] and c["day_master"][0] in paipan.GAN,
+                        f"{name}: 日主异常")
+
+    def test_all_scenarios_no_crash_and_invariants(self):
+        for name, kw in self.SCENARIOS.items():
+            with self.subTest(scenario=name):
+                c = paipan.build_chart(make_args(**kw))
+                self._assert_invariants(name, c)
+
+    def test_chart_is_json_serializable(self):
+        # --json 即 json.dumps(chart)；逐场景确认可序列化且可无损回读
+        import json
+        for name, kw in self.SCENARIOS.items():
+            with self.subTest(scenario=name):
+                c = paipan.build_chart(make_args(**kw))
+                s = json.dumps(c, ensure_ascii=False)
+                self.assertIn(c["pillars"]["日"], s, f"{name}: 日柱未出现在 JSON")
+                self.assertEqual(json.loads(s)["pillars"], c["pillars"],
+                                 f"{name}: JSON 回读四柱不一致")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.2.0-7c3aed.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-7c3aed.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-PolyForm%20NC-64748b.svg)
@@ -15,7 +15,7 @@
 
 像做技术分析一样算命：排盘交给脚本算准，推演按固定方法论逐层展开，每个结论都标注依据。
 
-[这是什么](#这是什么-what-is-this) • [为什么不一样](#为什么不一样-why-its-different) • [核心方法论](#核心方法论-methodology) • [命盘样例](#命盘样例-sample) • [可视化命书](#可视化命书-visual-report) • [快速开始](#快速开始-quick-start) • [多 Agent 支持](#多-agent-支持-works-with-any-agent) • [免责声明](#免责声明-disclaimer)
+[这是什么](#这是什么-what-is-this) • [为什么不一样](#为什么不一样-why-its-different) • [核心方法论](#核心方法论-methodology) • [知识底座](#知识底座-knowledge-base) • [命盘样例](#命盘样例-sample) • [可视化命书](#可视化命书-visual-report) • [快速开始](#快速开始-quick-start) • [多 Agent 支持](#多-agent-支持-works-with-any-agent) • [免责声明](#免责声明-disclaimer)
 
 </div>
 
@@ -108,7 +108,21 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 | `13_ditian_sui.md` | 滴天髓：衰旺真机、中和为贵、体用精神、极旺极衰辩证、气势顺逆通关、寒暖燥湿、任注实证 |
 | `14_ziping_zhenquan.md` | 子平真诠：月令取格、顺逆取用、相神护格、成败救应、格局高低、用神变化、行运同看 |
 
-其中 `00` 是概念检索入口，`01-07` 是推演主干，`08-14` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典，《滴天髓》《子平真诠》两大主干更各有专篇（`13`、`14`）。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。配套另有 `cases/` 完整推演范例与 `tests/` 排盘回归测试。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
+其中 `00` 是概念检索入口，`01-07` 是推演主干，`08-14` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典，《滴天髓》《子平真诠》两大主干更各有专篇（`13`、`14`）。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
+
+---
+
+## 知识底座 Knowledge Base
+
+算得准的前提是**有典可循、有例可照、有测可验**。这套引擎的底座做了四件事，让推演经得起追问：
+
+**一、把方法论锚回原典。** `references/08-14` 七篇深化层，把每个论断都接回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》。旺衰中和派的《滴天髓》（`13`）与格局派的《子平真诠》（`14`）两大主干各立专篇，原文＋白话＋调用提示俱全，引用前先认版本、争议处标「存疑」，孤证不立。
+
+**二、四个完整命例照着学。** `cases/` 收了 4 个脱敏命例，覆盖 4 个日主、4 种旺衰结构（身强用财官 / 身弱用印比 / 调候为急 / 从格顺势）。每例都是 `paipan.py` 实跑真盘＋第 0 到 10 步走全＋每条断语带依据，是把方法论落到一个真盘的最佳模板。
+
+**三、多用神冲突有决策树仲裁。** 调候、扶抑、格局、病药各执一词时该听谁的？`references/02` 给了一条五级优先级阶梯（先验从格 → 再急调候 → 扶抑定向 → 格局定点 → 病药校验），把流派之争收敛成一套可执行的取舍顺序。
+
+**四、排盘精度有回归测试兜底。** `tests/test_paipan.py` 共 44 个测试，以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞，再用立春换年柱、节气换月柱、子时流派、大运顺逆、真太阳时、多样输入鲁棒性等边界守住引擎不回退。改动 `paipan.py` 后跑一遍，全绿再用。
 
 ---
 
@@ -350,6 +364,8 @@ HeiGe-SuanMing/
 **Layer 1 — the chart is computed, never hand-derived.** `scripts/paipan.py` uses `lunar_python` for precise stem-branch calculation, automatically handling the three things people get wrong most often: setting the year pillar by **Lichun** (start of spring, not lunar new year), the month pillar by **solar terms** (not the lunar month), and the hour pillar by **true solar time**. On top of that it computes hidden stems, ten gods, nayin, the twelve life stages, void branches, branch interactions (combinations / clashes / punishments), weighted five-element strength, symbolic stars, and the luck/annual pillars.
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings. Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
+
+**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/test_paipan.py` locks the chart engine with 44 regression tests against classical ground truth plus calendar-boundary edge cases (Lichun, solar terms, midnight conventions, luck-cycle direction, true solar time).
 
 **Optional: a one-page visual report.** Once the reading is done, the engine can (on request) render the whole thing into a single elegant HTML scroll: chart, five-element bars, luck timeline, dimensional readings, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 
