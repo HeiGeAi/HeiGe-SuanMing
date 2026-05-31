@@ -142,8 +142,8 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 ## 可视化命书 Visual Report
 
 <p align="center">
-  <img src="assets/visual-hero.jpg" alt="可视化命书 · 卷首命格诗" width="100%">
-  <br><sub>一页命书长卷的卷首：命格诗四句点出命局核心（采用虚拟生辰演示）</sub>
+  <a href="https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html"><img src="assets/visual-hero.jpg" alt="可视化命书 · 卷首命格诗" width="100%"></a>
+  <br><sub>点图在线预览完整命书长卷 · 卷首命格诗四句点出命局核心（虚拟生辰演示）</sub>
 </p>
 
 十步推演给完之后，引擎会主动问你一句：要不要把这份命书做成**一页可视化 HTML**，便于保存、回看、分享。你点头才做。
@@ -157,11 +157,11 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 - **可脱敏**：对外分享可换虚构生辰重新排盘、断语写通用向，不留可对号入座的隐私
 
 <p align="center">
-  <img src="assets/visual-sig.jpg" alt="签名时刻 · 满盘五火独缺一水" width="100%">
-  <br><sub>签名时刻：本例满盘五火、独缺一水，命门「水」单字放大成全屏，过目不忘</sub>
+  <a href="https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html"><img src="assets/visual-sig.jpg" alt="签名时刻 · 满盘五火独缺一水" width="100%"></a>
+  <br><sub>签名时刻：本例满盘五火、独缺一水，命门「水」单字放大成全屏，过目不忘（点图在线预览）</sub>
 </p>
 
-样例见 [`examples/示例-八字命书.html`](./examples/示例-八字命书.html)（采用一组虚拟生辰演示），克隆仓库后用浏览器打开即可查看完整效果。方法论与结构模板见 [`references/07_keshihua_baoshu.md`](./references/07_keshihua_baoshu.md)。
+想看完整效果，点 **[在线预览](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html)**（raw.githack 实时渲染，无需克隆；在 GitHub 上直接点 `.html` 只会看到源码，这是 GitHub 不渲染网页的限制）。源码见 [`examples/示例-八字命书.html`](./examples/示例-八字命书.html)，方法论与结构模板见 [`references/07_keshihua_baoshu.md`](./references/07_keshihua_baoshu.md)。
 
 > 文字推演是根，可视化只是锦上添花。没有完整的十步推演，不直接出 HTML。
 
@@ -324,7 +324,7 @@ HeiGe-SuanMing/
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings. Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Optional: a one-page visual report.** Once the reading is done, the engine can (on request) render the whole thing into a single elegant HTML scroll: chart, five-element bars, luck timeline, dimensional readings, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See [`examples/示例-八字命书.html`](./examples/示例-八字命书.html) (built from a fictional birth date).
+**Optional: a one-page visual report.** Once the reading is done, the engine can (on request) render the whole thing into a single elegant HTML scroll: chart, five-element bars, luck timeline, dimensional readings, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 
 **Runs anywhere, tuned for Claude Code.** The core is just text plus a script — `SKILL.md` (methodology), `scripts/paipan.py` (chart engine), and `references/` (knowledge base) — so any agent that reads local files and runs Python can drive it (Codex, Cursor, Cline, Windsurf, Continue, Copilot, and so on): clone the repo, install deps, and point the agent's rules file at `SKILL.md`. That said, the best experience is **Claude Code + Claude Opus 4.8** — Bazi reasoning is one long dependent chain, and Opus is noticeably steadier at holding methodological discipline and never dropping the evidence behind a verdict.
 
