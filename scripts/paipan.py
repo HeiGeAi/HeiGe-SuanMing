@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-八字排盘引擎 v1.1 — HeiGe-SuanMing / bazi-mingli skill
+八字排盘引擎 v1.1 · HeiGe-SuanMing / bazi-mingli skill
 精确排四柱、藏干、十神、纳音、长生十二宫、五行力量、神煞、刑冲合会、大运、流年。
 
 排盘核心依赖 lunar_python：自动以「立春」定年柱、以「节气」定月柱、处理农历闰月，
