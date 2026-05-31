@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.1.0-7c3aed.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-7c3aed.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-PolyForm%20NC-64748b.svg)
@@ -15,7 +15,7 @@
 
 像做技术分析一样算命：排盘交给脚本算准，推演按固定方法论逐层展开，每个结论都标注依据。
 
-[这是什么](#这是什么-what-is-this) • [为什么不一样](#为什么不一样-why-its-different) • [核心方法论](#核心方法论-methodology) • [命盘样例](#命盘样例-sample) • [快速开始](#快速开始-quick-start) • [多 Agent 支持](#多-agent-支持-works-with-any-agent) • [免责声明](#免责声明-disclaimer)
+[这是什么](#这是什么-what-is-this) • [为什么不一样](#为什么不一样-why-its-different) • [核心方法论](#核心方法论-methodology) • [命盘样例](#命盘样例-sample) • [可视化命书](#可视化命书-visual-report) • [快速开始](#快速开始-quick-start) • [多 Agent 支持](#多-agent-支持-works-with-any-agent) • [免责声明](#免责声明-disclaimer)
 
 </div>
 
@@ -42,6 +42,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 - ✅ **大运流年**：自动顺逆起运、逐步十神，引动用神还是忌神一目了然
 - ✅ **分维度详断**：性格 / 事业 / 财运 / 婚姻 / 健康 / 学业 / 六亲，逐条带依据
 - ✅ **趋避建议**：用神落到方位、颜色、行业、注意事项，务实不玄
+- ✅ **可视化命书**：推演完成后可一键生成一页东方雅致的 HTML 命书，便于保存、回看、分享（断语与文字版逐字一致，先征询再生成）
 
 ### 适合谁
 
@@ -84,6 +85,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 第 8 步  分维度 —— 性格/事业/财运/婚姻/健康/学业/六亲，逐条带依据
 第 9 步  趋避 —— 用神落到方位、颜色、行业、注意事项
 第 10 步 总评 —— 3-5 句收束命局核心结构与一生大势
+第 11 步 可视化 —— （可选）征询用户后，把整份命书做成一页 HTML 报告
 ```
 
 知识底座放在 `references/`，推演时按需调用：
@@ -96,6 +98,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 | `04_shishen_xiangyi.md` | 十神类象、四柱宫位、六亲取用、分维度断法 |
 | `05_geju.md` | 八格取法、成败救应、从格 / 专旺 / 化气等特殊格局 |
 | `06_shensha.md` | 常用神煞查法、吉凶象义、使用原则 |
+| `07_keshihua_baoshu.md` | 可视化命书：何时征询、HTML 结构模板、字体可靠性铁律、五行配色映射 |
 
 ---
 
@@ -133,6 +136,24 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 ```
 
 脚本只负责把这些**事实**算准。拿到命盘后，Claude 再按方法论逐层推演旺衰、用神、格局、岁运，给出带依据的断语。
+
+---
+
+## 可视化命书 Visual Report
+
+十步推演给完之后，引擎会主动问你一句：要不要把这份命书做成**一页可视化 HTML**，便于保存、回看、分享。你点头才做。
+
+它把文字推演原样"呈现"成一卷东方雅致的命书长卷，不为排版另造任何结论：
+
+- **一页长卷**：卷首命格诗、命盘全图、五行能量条、旺衰用神、大运时间轴、流年逐年、分维度详断、趋避清单、综合总评，一屏一主角顺次铺开
+- **签名时刻**：把命局命门（最关键的用神或缺神）单字放大成全屏主视觉，一眼记住这盘的钥匙
+- **字体零塌**：思源宋体为骨架、系统宋体兜底，断网或加载失败也工整不掉字；层次靠字重拉开，不赌未必预装的书法体
+- **依据随行**：每个断语块保留依据标签（如 `伤官透月干为用`），与文字版推理链逐字一致
+- **可脱敏**：对外分享可换虚构生辰重新排盘、断语写通用向，不留可对号入座的隐私
+
+样例见 [`examples/示例-八字命书.html`](./examples/示例-八字命书.html)（采用一组虚拟生辰演示），克隆仓库后用浏览器打开即可查看完整效果。方法论与结构模板见 [`references/07_keshihua_baoshu.md`](./references/07_keshihua_baoshu.md)。
+
+> 文字推演是根，可视化只是锦上添花。没有完整的十步推演，不直接出 HTML。
 
 ---
 
@@ -257,7 +278,7 @@ pip3 install -r HeiGe-SuanMing/requirements.txt
 
 ```
 HeiGe-SuanMing/
-├── SKILL.md                      # 主提示词：十步方法论与输出结构（你的 Agent 读这个）
+├── SKILL.md                      # 主提示词：十一步方法论与输出结构（你的 Agent 读这个）
 ├── scripts/
 │   └── paipan.py                 # 精确排盘引擎（基于 lunar_python）
 ├── references/                   # 命理知识底座，推演时按需调用
@@ -266,7 +287,10 @@ HeiGe-SuanMing/
 │   ├── 03_tiaohou_qiongtong.md
 │   ├── 04_shishen_xiangyi.md
 │   ├── 05_geju.md
-│   └── 06_shensha.md
+│   ├── 06_shensha.md
+│   └── 07_keshihua_baoshu.md     # 可视化命书：一页 HTML 报告产出规范
+├── examples/
+│   └── 示例-八字命书.html         # 可视化命书样例（虚拟生辰，脱敏教学向）
 ├── assets/
 │   └── cover.png                 # README 题图
 ├── requirements.txt
@@ -289,6 +313,8 @@ HeiGe-SuanMing/
 **Layer 1 — the chart is computed, never hand-derived.** `scripts/paipan.py` uses `lunar_python` for precise stem-branch calculation, automatically handling the three things people get wrong most often: setting the year pillar by **Lichun** (start of spring, not lunar new year), the month pillar by **solar terms** (not the lunar month), and the hour pillar by **true solar time**. On top of that it computes hidden stems, ten gods, nayin, the twelve life stages, void branches, branch interactions (combinations / clashes / punishments), weighted five-element strength, symbolic stars, and the luck/annual pillars.
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings. Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
+
+**Optional: a one-page visual report.** Once the reading is done, the engine can (on request) render the whole thing into a single elegant HTML scroll: chart, five-element bars, luck timeline, dimensional readings, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See [`examples/示例-八字命书.html`](./examples/示例-八字命书.html) (built from a fictional birth date).
 
 **Runs anywhere, tuned for Claude Code.** The core is just text plus a script — `SKILL.md` (methodology), `scripts/paipan.py` (chart engine), and `references/` (knowledge base) — so any agent that reads local files and runs Python can drive it (Codex, Cursor, Cline, Windsurf, Continue, Copilot, and so on): clone the repo, install deps, and point the agent's rules file at `SKILL.md`. That said, the best experience is **Claude Code + Claude Opus 4.8** — Bazi reasoning is one long dependent chain, and Opus is noticeably steadier at holding methodological discipline and never dropping the evidence behind a verdict.
 

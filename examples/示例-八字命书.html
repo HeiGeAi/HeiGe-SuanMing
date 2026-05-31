@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的一生 · 八字命书示例</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js');</script>
+<style>
+:root{
+  --ink:#0c0b0e;
+  --ink-2:#14121a;
+  --ink-3:#1b1820;
+  --paper:#ece3d2;
+  --paper-dim:#a89e8a;
+  --paper-faint:#6f6757;
+  --gold:#c9a45c;
+  --gold-bright:#e3c478;
+  --gold-deep:#9a7b3e;
+  --cinnabar:#bb4232;
+  --cinnabar-bright:#d8543f;
+  --fire:#d97333;
+  --jade:#5e8478;
+  --jade-bright:#7da99a;
+  --water:#3f6b86;
+  --water-bright:#5e93b3;
+  --line:rgba(201,164,92,.20);
+  --line-soft:rgba(201,164,92,.10);
+  /* 全局单一骨架：思源宋体（webfont）→ 本地宋体兜底，零塌字。
+     标题/签名靠字重 900 拉力度，正文 300，命盘 700，绝不依赖未必安装的书法体 */
+  --brush:'Noto Serif SC','Songti SC','STSong','Songti TC',serif;
+  --kai:'Noto Serif SC','Songti SC','STSong','Songti TC',serif;
+  --serif:'Noto Serif SC','Songti SC','STSong','Songti TC',serif;
+  /* 拉丁数字与英文小标：Cormorant 优先，Georgia 兜底 */
+  --num:'Cormorant Garamond','Songti SC',Georgia,'Times New Roman',serif;
+  --gutter:clamp(18px,4vw,40px);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--serif);
+  background:var(--ink);
+  color:var(--paper);
+  line-height:1.95;
+  font-weight:300;
+  letter-spacing:.02em;
+  overflow-x:hidden;
+  position:relative;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+::selection{background:var(--cinnabar);color:var(--paper)}
+/* 背景氛围：火光晕 + 静态噪点（不动画，零重绘负担） */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(820px 620px at 80% -10%, rgba(217,115,51,.15), transparent 60%),
+    radial-gradient(680px 680px at 10% 6%, rgba(187,66,50,.10), transparent 62%),
+    radial-gradient(900px 900px at 50% 122%, rgba(63,107,134,.08), transparent 60%);
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.045;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:0 var(--gutter)}
+
+/* reveal：无 JS 时正常显示；只动 transform/opacity，合成器友好 */
+.js .reveal{opacity:0;transform:translateY(26px);transition:opacity 1.05s cubic-bezier(.2,.7,.2,1),transform 1.05s cubic-bezier(.2,.7,.2,1)}
+.js .reveal.in{opacity:1;transform:none}
+
+/* ============ 卷首 Hero ============ */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;padding:80px 30px 64px}
+/* 签名书脊：朱砂出血竖条 */
+.hero::before{content:'';position:absolute;left:0;top:0;bottom:0;width:9px;background:linear-gradient(var(--cinnabar),var(--fire) 50%,var(--cinnabar));z-index:3}
+.hero-frame{position:absolute;inset:34px;border:1px solid var(--line);pointer-events:none}
+.hero-frame::before,.hero-frame::after{content:'';position:absolute;width:18px;height:18px;border:1px solid var(--gold)}
+.hero-frame::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.hero-frame::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.hero .seal{
+  position:relative;
+  width:76px;height:76px;border:2px solid var(--cinnabar);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:36px;
+  font-family:var(--brush);font-size:44px;color:var(--cinnabar-bright);
+  box-shadow:0 0 34px rgba(187,66,50,.3);transform:rotate(-3deg);
+}
+/* 光晕呼吸只动 opacity（box-shadow 静态，不逐帧重绘） */
+.hero .seal::after{content:'';position:absolute;inset:-7px;border-radius:9px;box-shadow:0 0 30px rgba(187,66,50,.45);opacity:.45;animation:halo 5s ease-in-out infinite}
+@keyframes halo{0%,100%{opacity:.4}50%{opacity:.85}}
+.hero .pre{font-family:var(--kai);font-size:15px;letter-spacing:.5em;color:var(--gold);margin-bottom:24px;padding-left:.5em}
+.hero h1{font-family:var(--brush);font-size:clamp(78px,17vw,170px);font-weight:900;line-height:.92;color:var(--paper);text-shadow:0 0 56px rgba(217,115,51,.32);white-space:nowrap;letter-spacing:.04em}
+.hero .name{font-family:var(--kai);font-size:clamp(20px,4vw,28px);letter-spacing:.5em;color:var(--gold-bright);margin:30px 0 10px;padding-left:.5em}
+.hero .birth{font-family:var(--num);font-size:17px;letter-spacing:.06em;color:var(--paper-dim);font-style:italic}
+.hero .verse{margin-top:42px;max-width:560px;font-family:var(--kai);font-size:clamp(16px,3vw,20px);color:var(--paper);line-height:2.25;opacity:.94;text-wrap:balance}
+.hero .verse b{color:var(--fire);font-weight:400}
+.hero .scroll-cue{position:absolute;bottom:38px;left:50%;transform:translateX(-50%);font-family:var(--kai);font-size:12px;letter-spacing:.4em;color:var(--paper-faint);writing-mode:vertical-rl;padding-left:.4em}
+.hero .scroll-cue::after{content:'';display:block;width:1px;height:42px;background:linear-gradient(var(--gold),transparent);margin:14px auto 0}
+
+/* ============ 通用 section ============ */
+section{padding:76px 0;position:relative}
+.sec-head{display:flex;align-items:baseline;gap:22px;margin-bottom:46px}
+.sec-no{font-family:var(--brush);font-size:clamp(46px,8vw,68px);color:var(--gold-deep);line-height:.9;opacity:.85;flex:none}
+.sec-title{font-family:var(--kai);font-size:clamp(26px,5vw,38px);color:var(--paper);letter-spacing:.1em;text-wrap:balance}
+.sec-sub{font-family:var(--num);font-size:14px;color:var(--gold);letter-spacing:.28em;margin-top:6px;text-transform:uppercase;font-style:italic}
+.divider{display:flex;align-items:center;justify-content:center;gap:18px;margin:0;color:var(--gold-deep)}
+.divider::before,.divider::after{content:'';height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+.divider span{font-family:var(--kai);font-size:15px;letter-spacing:.34em;color:var(--gold)}
+
+p{margin-bottom:20px;color:var(--paper);font-weight:300}
+p .em{color:var(--gold-bright);font-weight:500}
+p .fire{color:var(--fire);font-weight:500}
+p .water{color:var(--jade-bright);font-weight:500}
+strong{color:var(--gold-bright);font-weight:600}
+.lead{font-family:var(--kai);font-size:clamp(19px,2.6vw,23px);color:var(--paper);border-left:2px solid var(--cinnabar);padding-left:22px;margin-bottom:32px;line-height:1.95;text-wrap:balance}
+.note{font-size:14px;color:var(--paper-dim);font-style:italic;font-family:var(--serif)}
+
+/* 依据标签 */
+.basis{display:inline-block;font-family:var(--num);font-size:12.5px;color:var(--jade-bright);background:rgba(94,132,120,.1);border:1px solid rgba(94,132,120,.28);border-radius:3px;padding:2px 10px;margin:0 2px;letter-spacing:.04em;white-space:nowrap;font-style:italic}
+
+/* ============ 四柱命盘 ============ */
+.chart{border:1px solid var(--line);background:linear-gradient(160deg,rgba(28,25,34,.9),rgba(12,11,14,.78))}
+.chart table{width:100%;border-collapse:collapse;text-align:center}
+.chart th,.chart td{padding:14px 6px;border:1px solid var(--line-soft);font-weight:300}
+.chart thead th{font-family:var(--kai);color:var(--gold);font-size:15px;letter-spacing:.16em;background:rgba(201,164,92,.06)}
+.chart .rowlabel{font-family:var(--kai);color:var(--paper-faint);font-size:13px;letter-spacing:.12em;background:rgba(0,0,0,.22);white-space:nowrap}
+.chart .gan,.chart .zhi{font-family:var(--brush);font-size:48px;line-height:1;padding:18px 6px}
+.chart .day .gan{color:var(--fire);text-shadow:0 0 22px rgba(217,115,51,.5)}
+.el-fire{color:var(--cinnabar-bright)}
+.el-earth{color:#caa46a}
+.el-metal{color:#cdd2cf}
+.el-wood{color:var(--jade-bright)}
+.el-water{color:var(--water-bright)}
+.chart .ss{font-size:13px;color:var(--paper-dim)}
+.chart .hide{font-size:13px;color:var(--paper-faint);line-height:1.7}
+.chart col.day{background:rgba(217,115,51,.07)}
+.chart-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;font-size:13px;color:var(--paper-dim)}
+.chart-meta span{border:1px solid var(--line-soft);padding:5px 12px;border-radius:3px}
+.chart-meta b{color:var(--gold);font-weight:500}
+
+/* ============ 五行能量 ============ */
+.wuxing{display:grid;gap:16px;margin-top:8px}
+.wx-row{display:grid;grid-template-columns:92px 1fr auto;align-items:center;gap:18px}
+.wx-name{font-family:var(--brush);font-size:32px;display:flex;align-items:center;gap:10px}
+.wx-name small{font-family:var(--num);font-size:15px;color:var(--paper-faint);font-style:italic}
+.wx-bar{height:14px;background:rgba(255,255,255,.04);border:1px solid var(--line-soft);border-radius:8px;overflow:hidden;position:relative}
+.wx-fill{height:100%;border-radius:8px;transform-origin:left;animation:grow 1.4s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.wx-val{font-family:var(--num);font-size:17px;color:var(--paper-dim);min-width:66px;text-align:right;font-style:italic}
+.f-fire{background:linear-gradient(90deg,#7a2018,var(--cinnabar),var(--fire))}
+.f-earth{background:linear-gradient(90deg,#6b5526,#caa46a)}
+.f-metal{background:linear-gradient(90deg,#5a6360,#cdd2cf)}
+.f-wood{background:linear-gradient(90deg,#2f4a40,var(--jade-bright))}
+.f-water{background:linear-gradient(90deg,#1d3340,var(--water-bright))}
+.wx-empty{color:var(--cinnabar-bright);font-style:normal;font-family:var(--kai);font-size:13px;letter-spacing:.08em}
+
+/* ============ 卡片网格 ============ */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line-soft);border:1px solid var(--line);margin-top:8px}
+.card{background:var(--ink);padding:30px 26px}
+.card h4{font-family:var(--kai);font-size:18px;color:var(--gold-bright);letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.card h4 i{font-style:normal;font-family:var(--brush);font-size:30px;color:var(--gold-deep);line-height:1}
+.card .v{font-size:15px;color:var(--paper);line-height:1.9}
+.card .v b{color:var(--fire);font-weight:500}
+.card .tag{font-family:var(--num);font-size:12px;color:var(--jade-bright);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:14px;font-style:italic}
+
+/* ============ 签名时刻 · 五火独缺一水 ============ */
+.signature{position:relative;z-index:1;min-height:94vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:90px 28px;overflow:hidden;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);background:radial-gradient(58% 56% at 50% 40%,rgba(63,107,134,.12),transparent 70%)}
+.sig-stage{position:relative;width:min(580px,92vw);height:min(560px,88vw);display:flex;align-items:center;justify-content:center}
+.ember{position:absolute;font-family:var(--brush);color:var(--cinnabar);opacity:.18;font-size:clamp(42px,9vw,96px);user-select:none;line-height:1;text-shadow:0 0 26px rgba(187,66,50,.3)}
+.ember.e1{top:1%;left:12%}
+.ember.e2{top:8%;right:5%;color:var(--fire)}
+.ember.e3{bottom:12%;left:1%;color:var(--fire)}
+.ember.e4{bottom:2%;right:14%}
+.ember.e5{top:43%;left:7%;font-size:clamp(30px,6vw,66px);opacity:.12}
+.sig-core{position:relative;display:flex;align-items:center;justify-content:center}
+.sig-core::before{content:'';position:absolute;width:130%;height:130%;left:-15%;top:-15%;border-radius:50%;background:radial-gradient(circle,rgba(63,107,134,.3),transparent 62%);z-index:0;animation:breathe 6s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+.sig-water{position:relative;z-index:2;font-family:var(--brush);font-size:clamp(190px,42vw,400px);line-height:1;color:var(--paper);text-shadow:0 0 42px rgba(94,147,179,.6),0 0 96px rgba(63,107,134,.34)}
+.sig-caption{text-align:center;max-width:560px;z-index:2;position:relative;margin-top:14px}
+.sig-zh{font-family:var(--brush);font-size:clamp(28px,5.4vw,44px);color:var(--gold-bright);letter-spacing:.14em;margin-bottom:12px}
+.sig-en{font-family:var(--num);font-style:italic;font-size:13.5px;letter-spacing:.42em;color:var(--water-bright);text-transform:uppercase;margin-bottom:22px}
+.sig-caption p{font-family:var(--kai);font-size:clamp(16px,2.4vw,18px);color:var(--paper-dim);line-height:2.05;text-wrap:balance}
+.sig-caption p b{color:var(--paper);font-weight:400}
+
+/* ============ 大运时间轴 ============ */
+.luck{position:relative;margin-top:10px;padding-left:14px}
+.luck::before{content:'';position:absolute;left:14px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--jade),var(--gold),var(--cinnabar),var(--gold-deep),var(--jade))}
+.step{position:relative;padding:0 0 38px 46px}
+.step::before{content:'';position:absolute;left:-2px;top:6px;width:16px;height:16px;border-radius:50%;background:var(--ink);border:2px solid var(--gold);box-shadow:0 0 0 4px var(--ink)}
+.step.good::before{border-color:var(--jade-bright);box-shadow:0 0 0 4px var(--ink),0 0 16px var(--jade)}
+.step.peak::before{border-color:var(--gold-bright);background:var(--gold);box-shadow:0 0 0 4px var(--ink),0 0 20px var(--gold)}
+.step.bad::before{border-color:var(--cinnabar-bright);background:var(--cinnabar);box-shadow:0 0 0 4px var(--ink),0 0 20px var(--cinnabar)}
+.step .gz{font-family:var(--brush);font-size:36px;line-height:1;color:var(--paper);margin-bottom:4px;display:inline-block}
+.step .age{font-family:var(--num);font-size:15px;color:var(--gold);font-style:italic;letter-spacing:.05em;margin-left:14px}
+.step .badge{display:inline-block;font-family:var(--kai);font-size:12.5px;padding:3px 12px;border-radius:3px;margin-left:12px;letter-spacing:.08em;vertical-align:middle}
+.badge.b-good{background:rgba(94,132,120,.16);color:var(--jade-bright);border:1px solid rgba(94,132,120,.4)}
+.badge.b-peak{background:rgba(201,164,92,.16);color:var(--gold-bright);border:1px solid rgba(201,164,92,.45)}
+.badge.b-bad{background:rgba(187,66,50,.16);color:var(--cinnabar-bright);border:1px solid rgba(187,66,50,.45)}
+.badge.b-mid{background:rgba(168,158,138,.14);color:var(--paper-dim);border:1px solid var(--line)}
+.step .desc{font-size:15px;color:var(--paper-dim);margin-top:10px;line-height:1.85}
+.step .desc b{color:var(--paper);font-weight:500}
+.step .desc .fire{color:var(--fire)}
+.step .desc .water{color:var(--jade-bright)}
+
+/* ============ 流年 ============ */
+.years{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:8px}
+.yr{border:1px solid var(--line-soft);padding:16px;position:relative;background:linear-gradient(160deg,rgba(28,25,34,.5),transparent)}
+.yr .y{font-family:var(--num);font-size:25px;font-style:italic;color:var(--gold)}
+.yr .gz{font-family:var(--brush);font-size:24px;color:var(--paper);margin-left:8px}
+.yr .t{font-size:13px;color:var(--paper-dim);margin-top:8px;line-height:1.7}
+.yr.warn{border-color:rgba(187,66,50,.4)}
+.yr.warn .y{color:var(--cinnabar-bright)}
+.yr.lucky{border-color:rgba(94,132,120,.4)}
+.yr.lucky .y{color:var(--jade-bright)}
+.yr .dot{position:absolute;top:14px;right:14px;font-size:11px;font-family:var(--kai);letter-spacing:.1em}
+.yr.warn .dot{color:var(--cinnabar-bright)}
+.yr.lucky .dot{color:var(--jade-bright)}
+
+/* ============ 趋避清单 ============ */
+.avoid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);border:1px solid var(--line);margin-top:8px}
+.av{background:var(--ink);padding:24px}
+.av .k{font-family:var(--kai);font-size:15px;color:var(--gold);letter-spacing:.12em;margin-bottom:8px}
+.av .yes{color:var(--jade-bright)}
+.av .no{color:var(--cinnabar-bright)}
+.av .v{font-size:15px;line-height:1.9;color:var(--paper)}
+
+/* ============ 总评 ============ */
+.final{border:1px solid var(--gold-deep);padding:50px 42px;background:radial-gradient(600px 300px at 50% 0,rgba(217,115,51,.09),transparent),linear-gradient(160deg,rgba(28,25,34,.7),rgba(12,11,14,.4));position:relative}
+.final::before{content:'評';position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-family:var(--brush);font-size:34px;color:var(--cinnabar-bright);background:var(--ink);padding:0 18px;line-height:1}
+.final p{font-size:18px;line-height:2.3}
+.final .bigline{font-family:var(--brush);font-size:clamp(22px,4.4vw,30px);color:var(--gold-bright);text-align:center;line-height:1.85;margin:32px 0;letter-spacing:.06em;text-wrap:balance}
+.final .eight{text-align:center;font-family:var(--kai);font-size:clamp(18px,2.6vw,21px);color:var(--gold-bright);letter-spacing:.12em;margin-top:8px}
+
+/* ============ 页脚 ============ */
+footer{text-align:center;padding:60px 28px 84px;border-top:1px solid var(--line-soft);margin-top:40px;position:relative;z-index:1}
+footer .disc{font-size:13px;color:var(--paper-faint);max-width:580px;margin:0 auto 26px;line-height:1.95;font-style:italic}
+footer .sig-stamp{font-family:var(--brush);font-size:26px;color:var(--gold-deep)}
+footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);letter-spacing:.2em;margin-top:8px;font-style:italic}
+
+.tiangan-deco{position:fixed;top:0;right:16px;height:100vh;display:flex;flex-direction:column;justify-content:center;gap:18px;font-family:var(--brush);font-size:16px;color:rgba(201,164,92,.13);writing-mode:vertical-rl;z-index:0;pointer-events:none;letter-spacing:.3em}
+
+@media(max-width:680px){
+  .chart .gan,.chart .zhi{font-size:33px;padding:12px 2px}
+  .chart th,.chart td{padding:9px 2px}
+  .sec-head{gap:14px;margin-bottom:34px}
+  .avoid{grid-template-columns:1fr}
+  .wx-row{grid-template-columns:68px 1fr auto;gap:10px}
+  .wx-name{font-size:25px}
+  .tiangan-deco{display:none}
+  .step .age,.step .badge{display:block;margin-left:0;margin-top:6px}
+  .final{padding:40px 24px}
+}
+
+/* 尊重减少动效偏好：关掉一切动画与揭示，内容直显 */
+@media (prefers-reduced-motion:reduce){
+  .js .reveal{opacity:1!important;transform:none!important;transition:none}
+  *{animation:none!important}
+  html{scroll-behavior:auto}
+}
+
+/* ===== 字重层级：单一宋体骨架，靠字重 300→900 拉出主次 ===== */
+.hero .seal,.sec-no,.card h4 i,.ember,.sig-water,.sig-zh,.final::before,footer .sig-stamp{font-weight:900}
+.chart .gan,.chart .zhi,.wx-name,.step .gz,.yr .gz,.final .bigline{font-weight:700}
+.sec-title,.card h4{font-weight:600}
+.hero .name,.hero .pre,.divider span,.chart thead th,.final .eight,.av .k,.step .badge,.yr .dot,.tiangan-deco{font-weight:500}
+.hero .verse,.hero .scroll-cue,.lead,.chart .rowlabel,.sig-caption p,.wx-empty{font-weight:400}
+</style>
+</head>
+<body>
+<div class="tiangan-deco">甲乙丙丁戊己庚辛壬癸</div>
+
+<!-- ============ 卷首 ============ -->
+<header class="hero">
+  <div class="hero-frame"></div>
+  <div class="seal">命</div>
+  <div class="pre">八字命理 · 推演示例</div>
+  <h1>我的一生</h1>
+  <div class="name">示例命主 · 命书</div>
+  <div class="birth">公历 1986 年 6 月 22 日 · 午时（虚拟生辰）</div>
+  <div class="verse">一炉<b>丁火</b>，生于盛夏正午，<br>月时双禄，寅午合火，<br>两丙帮身而<b>满盘无水</b>。<br>此命之钥，尽在「<b>旺极缺水</b>」四字。</div>
+  <div class="scroll-cue">向下展卷</div>
+</header>
+
+<div class="wrap">
+
+<!-- ============ 一图读懂 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">壹</div>
+    <div>
+      <div class="sec-title">先用一个画面看懂全盘</div>
+      <div class="sec-sub">The Whole Chart in One Image</div>
+    </div>
+  </div>
+  <p class="lead reveal">这张八字，像一座生在正午、烧得正旺、却缺了一瓢水的火炉。</p>
+  <p class="reveal">四柱八个字里，<span class="fire">五个是火</span>，木两个、金一个，<span class="em">水和土都没有现身</span>。把它想象成一个炉子，正午起火、火苗蹿得老高，旁边没有一桶水能浇，全靠已有的火在自己烧自己。</p>
+  <p class="reveal">这一辈子的吉凶顺逆，核心就一句话：<strong>这座火炉太旺、太燥、缺水</strong>。读懂了这个画面，后面所有的结论都顺理成章。本篇所有断语，都从脚本精确排盘推出，每条都标注依据，孤证不立。</p>
+</section>
+
+<!-- ============ 命盘全图 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">貳</div>
+    <div>
+      <div class="sec-title">命盘全图</div>
+      <div class="sec-sub">The Four Pillars</div>
+    </div>
+  </div>
+  <p class="reveal">由 paipan.py 脚本精确排定。四柱八字如下，<span class="fire">日主丁火</span>即命主本人，生于午月正当令。</p>
+  <div class="chart reveal">
+    <table>
+      <colgroup><col><col><col><col class="day"><col></colgroup>
+      <thead><tr><th></th><th>年柱 · 祖辈</th><th>月柱 · 父母事业</th><th>日柱 · 自身配偶</th><th>时柱 · 子女晚年</th></tr></thead>
+      <tbody>
+        <tr><td class="rowlabel">天干十神</td><td class="ss">劫财</td><td class="ss">正印</td><td class="ss">日主</td><td class="ss">劫财</td></tr>
+        <tr><td class="rowlabel">天　干</td><td class="gan el-fire">丙</td><td class="gan el-wood">甲</td><td class="day gan el-fire">丁</td><td class="gan el-fire">丙</td></tr>
+        <tr><td class="rowlabel">地　支</td><td class="zhi el-wood">寅</td><td class="zhi el-fire">午</td><td class="day zhi el-metal">酉</td><td class="zhi el-fire">午</td></tr>
+        <tr><td class="rowlabel">藏　干</td><td class="hide">甲 丙 戊</td><td class="hide">丁 己</td><td class="hide">辛</td><td class="hide">丁 己</td></tr>
+        <tr><td class="rowlabel">藏干十神</td><td class="hide">正印·劫财·伤官</td><td class="hide">比肩·食神</td><td class="hide">偏财</td><td class="hide">比肩·食神</td></tr>
+        <tr><td class="rowlabel">星　运</td><td class="ss">死</td><td class="ss">临官</td><td class="ss">长生</td><td class="ss">临官</td></tr>
+        <tr><td class="rowlabel">纳　音</td><td class="ss">炉中火</td><td class="ss">沙中金</td><td class="ss">山下火</td><td class="ss">天河水</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="chart-meta reveal">
+    <span>生肖 <b>虎</b></span>
+    <span>星座 <b>巨蟹</b></span>
+    <span>农历 <b>一九八六年五月十六</b></span>
+    <span>节气 <b>夏至当天</b></span>
+    <span>地支 <b>寅午半合火</b></span>
+    <span>地支 <b>午午自刑</b></span>
+    <span>神煞 <b>天乙·文昌·月德·禄神·将星·桃花</b></span>
+    <span>大运 <b>5 岁顺行</b></span>
+  </div>
+  <p class="note reveal" style="margin-top:18px">注：本篇是「八字命理」skill 的可视化示例，采用一组<b style="color:var(--gold)">虚拟生辰</b>（公历 1986 年 6 月 22 日午时，男）演示完整推演与排版，命盘由脚本精确排定，断语为通用教学向，不对应任何真实个人。</p>
+</section>
+
+<!-- ============ 五行能量 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">參</div>
+    <div>
+      <div class="sec-title">五行能量分布</div>
+      <div class="sec-sub">The Five Elements</div>
+    </div>
+  </div>
+  <p class="reveal">五行就是五种能量。下图按加权力量呈现盘中五行的强弱，一眼能看出问题所在：<span class="fire">火独大，水归零</span>。</p>
+  <div class="wuxing reveal">
+    <div class="wx-row"><div class="wx-name el-fire">火 <small>×5</small></div><div class="wx-bar"><div class="wx-fill f-fire" style="width:100%"></div></div><div class="wx-val">6.5　旺极</div></div>
+    <div class="wx-row"><div class="wx-name el-wood">木 <small>×2</small></div><div class="wx-bar"><div class="wx-fill f-wood" style="width:31%;animation-delay:.1s"></div></div><div class="wx-val">2.0</div></div>
+    <div class="wx-row"><div class="wx-name el-earth">土 <small>×0</small></div><div class="wx-bar"><div class="wx-fill f-earth" style="width:26%;animation-delay:.2s"></div></div><div class="wx-val">1.7　藏</div></div>
+    <div class="wx-row"><div class="wx-name el-metal">金 <small>×1</small></div><div class="wx-bar"><div class="wx-fill f-metal" style="width:15%;animation-delay:.3s"></div></div><div class="wx-val">1.0　弱</div></div>
+    <div class="wx-row"><div class="wx-name el-water">水 <small>×0</small></div><div class="wx-bar"><div class="wx-fill f-water" style="width:2%;animation-delay:.4s"></div></div><div class="wx-val"><span class="wx-empty">0　命门所缺</span></div></div>
+  </div>
+  <p class="reveal" style="margin-top:30px">同党（帮身的印比火木）占 <strong>76%</strong>，异党（耗身的食伤财官）占 24%。<span class="basis">同党 8.5 ｜ 异党 2.7</span> 火势压倒性独大，<strong>这是全盘第一根本：身旺极而水火失衡</strong>。</p>
+</section>
+
+<!-- ============ 旺衰 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">肆</div>
+    <div>
+      <div class="sec-title">这团火有多旺</div>
+      <div class="sec-sub">Strength of the Day Master</div>
+    </div>
+  </div>
+  <p class="lead reveal">结论：生在午月当令，又得双禄帮身，身旺到了极点。</p>
+  <p class="reveal">算命第一步永远是先判断日主这股能量是强是弱，它决定后面所有的补法。判断看四点，逐条给你看证据：</p>
+  <div class="cards reveal">
+    <div class="card"><span class="tag">月令</span><h4><i>一</i>生在盛夏正午</h4><div class="v">生在午月，火正当令，丁火在此为<b>临官（禄）</b>。这一条就是头号加分项，火得令而旺。</div></div>
+    <div class="card"><span class="tag">通根</span><h4><i>二</i>月时双禄</h4><div class="v">月支午、时支午都是丁火的禄地，等于<b>脚踏两团篝火的老家</b>，根气极厚。</div></div>
+    <div class="card"><span class="tag">生扶</span><h4><i>三</i>两丙一甲</h4><div class="v">天干两个丙火（劫财）来帮身，一个甲木（正印）来生火，<b>火上添火又添柴</b>。</div></div>
+    <div class="card"><span class="tag">合会</span><h4><i>四</i>寅午半合</h4><div class="v">年支寅与月支午<b>半合成火</b>，月时两午又自刑叠气，地支也抱团助火。</div></div>
+  </div>
+  <p class="reveal" style="margin-top:30px">四条全在猛烈助火。<strong>所以这把火旺到了极点</strong>，逼近单独成势的炎上格。全盘唯一降火的，是<span class="em">日主自坐的酉金（财星，且为长生）</span>，但孤金独水难敌满盘烈火。综合判为<span class="em">「身旺极」</span>，按常格论而不作纯炎上。<span class="basis">午月得令 + 月时双午为禄 + 两丙帮身 + 寅午半合火</span></p>
+  <p class="reveal"><b>这意味着：</b>命主能量极强、主观能动性极强，谁也压不住。好处是行动力猛、有主见、扛得住事；短板是太满太冲，容易过头、容易燥。</p>
+</section>
+
+<!-- ============ 用神 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">伍</div>
+    <div>
+      <div class="sec-title">这盘最该补什么</div>
+      <div class="sec-sub">The Pivotal Element</div>
+    </div>
+  </div>
+  <p class="lead reveal">结论：最缺、最该补的是水，其次是金。最怕再添火和木。</p>
+  <p class="reveal">夏天的火炉烧成这样，常识就告诉你得浇水。命理也是这个道理。这「该补的一味药」就是用神，它是事业、财运、婚姻、健康一切吉凶的总开关。</p>
+  <div class="cards reveal">
+    <div class="card"><span class="tag">用神 · 第一</span><h4 class="el-water"><i>水</i>官杀</h4><div class="v">夏火炎炎，《穷通宝鉴》丁火午月专用<b>壬水</b>调候。水能压住过旺的火、给燥炉降温，在盘里代表<b>事业框架与子女</b>。可惜原局<b>一滴都没有</b>，全盘最大窟窿，只能靠运补。</div></div>
+    <div class="card"><span class="tag">喜神 · 第二</span><h4 class="el-metal"><i>金</i>财星</h4><div class="v">金生水做水源，又能耗火。代表<b>钱财与妻</b>。难得的是<b>日主自坐酉金</b>、财星有根，比单透天干的财稳得多，但仍需配水才不被熔。</div></div>
+    <div class="card"><span class="tag">忌神</span><h4 class="el-fire"><i>火</i>比劫</h4><div class="v">火上浇油，只会让人更燥、更破财、加重争抢。<b>头号忌讳</b>。</div></div>
+    <div class="card"><span class="tag">仇神</span><h4 class="el-wood"><i>木</i>印星</h4><div class="v">木是柴，扔进旺火里只会烧得更猛。缺木看似该补，其实<b>木来帮倒忙</b>，除非是带水的湿木。</div></div>
+  </div>
+  <p class="reveal" style="margin-top:30px">调候上，丁火生午月本取壬水为主、庚金为佐，恰与扶抑同向，真正的命门只有一个字：<span class="water">水</span>。<strong>记住八字趋吉总纲：多亲近水和金（黑蓝白、北方西方、流动性的东西），远离火和燥木（红色、南方、火爆的东西）。</strong></p>
+</section>
+
+</div>
+
+<!-- ============ 签名时刻 · 五火独缺一水 ============ -->
+<section class="signature reveal">
+  <div class="sig-stage">
+    <span class="ember e1">火</span>
+    <span class="ember e2">火</span>
+    <span class="ember e3">火</span>
+    <span class="ember e4">火</span>
+    <span class="ember e5">火</span>
+    <div class="sig-core"><div class="sig-water">水</div></div>
+  </div>
+  <div class="sig-caption">
+    <div class="sig-zh">满盘五火 · 独缺一水</div>
+    <div class="sig-en">Five Fires, Not One Drop</div>
+    <p>这一个字，是整张命盘的<b>命门</b>，是它缺的那味药，也是一生顺逆的总开关。<br>认准它，趋避之道就只剩两个方向：<b>近水、远火</b>。</p>
+  </div>
+</section>
+
+<div class="wrap">
+
+<!-- ============ 格局 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">陸</div>
+    <div>
+      <div class="sec-title">靠什么立身</div>
+      <div class="sec-sub">The Structure</div>
+    </div>
+  </div>
+  <p class="lead reveal">结论：建禄格，身旺靠自身打拼，财官藏而待运，是一张「晚发」的盘。</p>
+  <p class="reveal">月令午是丁火的禄地，这盘的格局叫<strong>建禄格</strong><span class="basis">月令午为丁之临官</span>。建禄格的人天生根气厚、独立性强，走的是<strong>靠自己的本事打拼、专业立身或自主创业</strong>这条路，靠组织庇荫、论资排辈那套不太适合。</p>
+  <p class="reveal">身旺的建禄格，最喜财官食伤来泄耗，最忌印比再帮。这盘有个亮点也有个瑕疵：亮点是<span class="em">日主自坐酉金偏财、且为长生</span>，与财有缘、善经营；瑕疵是<span class="fire">财（酉金）藏而不透、官杀（水）原局全无、食伤（戊己土）也只藏不透</span>，等于一身好料卡在仓里没拿出来。所以格局定在<strong>中等待发</strong>：本事是真的，但要等金水大运把财官引出来，才能真正成事、攒下钱。</p>
+  <p class="reveal">神煞也呼应这一点：<span class="em">将星</span>主威仪统御、<span class="em">文昌</span>主聪明文采、<span class="em">天乙月德</span>主贵人庇荫。<strong>这是一个有领导气、有文才、有贵人缘的命，欠的只是时机与那一瓢水。</strong></p>
+</section>
+
+<!-- ============ 大运 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">柒</div>
+    <div>
+      <div class="sec-title">十年大运 · 一生大势</div>
+      <div class="sec-sub">The Decade Cycles</div>
+    </div>
+  </div>
+  <p class="reveal">大运是每十年的大气候。原则很简单：<span class="water">走水、走金的运为顺</span>；<span class="fire">走火、走木的运为逆</span>。下面一步步用人话拆，吉凶已用颜色标出。这盘 5 岁起、顺行。</p>
+  <div class="luck reveal">
+    <div class="step">
+      <span class="gz">乙未</span><span class="age">6 – 15 岁　1991 起</span><span class="badge b-mid">少年 · 木火起步</span>
+      <div class="desc">乙木偏印生火、未为木库又午未合火，木火偏旺。印星护佑、读书有靠山。<b>童年根基阶段，火气已偏旺。</b></div>
+    </div>
+    <div class="step good">
+      <span class="gz">丙申</span><span class="age">16 – 25 岁　2001 起</span><span class="badge b-good">青年 · 财官根进场</span>
+      <div class="desc">天干丙火劫财（忌）虽帮身，胜在地支：<span class="water">申金正财得地、申中藏壬水（正官用神）</span>，申金还冲开寅午的半合火局、泄掉一截火势。<b>财与官的根第一次进场，求学转向社会、起步积累。</b></div>
+    </div>
+    <div class="step good">
+      <span class="gz">丁酉</span><span class="age">26 – 35 岁　2011 起</span><span class="badge b-good">壮年 · 财星到位</span>
+      <div class="desc">天干丁火比肩（忌）主有人分利，但地支<span class="water">酉金偏财得地、又是丁的长生</span>，财星坐实。<b>能赚钱、出成果的第一波积累期</b>，唯需防同辈争利、合伙分账。</div>
+    </div>
+    <div class="step bad">
+      <span class="gz">戊戌</span><span class="age">36 – 45 岁　2021 起</span><span class="badge b-bad">火局大坎 · 最需谨慎</span>
+      <div class="desc">天干戊土伤官本能泄秀生金，是好事；坏在地支：<span class="fire">大运的戌一进来，和盘里的寅、午凑成完整的寅午戌三合大火局</span>，火烧到顶、戌火库被引爆。星运逢「墓」。<b>这十年火旺攻身（心血管、血压、眼目）、财被火熔（破耗）、脾气易上头、合伙易起纠纷，是全局最大一道坎。</b></div>
+    </div>
+    <div class="step peak">
+      <span class="gz">己亥</span><span class="age">46 – 55 岁　2031 起</span><span class="badge b-peak">晚运回甘 · 黄金转折</span>
+      <div class="desc">己土食神泄秀、<span class="water">亥水正官（用神）正式到位</span>、亥水克火润燥，最需要的事业名分与那一瓢水一起来了。<b>46 岁后水补上、食神生财，事业、财运、心境一起转好</b>，是这盘真正的发达起点。</div>
+    </div>
+    <div class="step good">
+      <span class="gz">庚子</span><span class="age">56 – 65 岁　2041 起</span><span class="badge b-good">财官双美</span>
+      <div class="desc"><span class="water">庚金正财透、子水七杀（用神）坐实</span>，财与官同到、调候完全到位。子午一冲主奔波变动，但<b>财官双美，这十年仍是金水滋养的好运。</b></div>
+    </div>
+    <div class="step good">
+      <span class="gz">辛丑</span><span class="age">66 – 75 岁　2051 起</span><span class="badge b-good">湿土补命 · 安稳</span>
+      <div class="desc">辛金偏财透，丑为湿土，一来同时干三件好事：<b>给火降温、生出金（钱）、还藏着水</b>，三重补到命门上。<b>财旺心安，是福寿绵长的一步好运。</b></div>
+    </div>
+    <div class="step">
+      <span class="gz">壬寅 · 癸卯</span><span class="age">76 岁以后</span><span class="badge b-mid">颐养天年</span>
+      <div class="desc">壬癸水（官杀用神）虽透，地支寅卯木却来生火、寅午再半合火，<b>天干补水、地支助火，半吉半忧</b>。高龄以静养、含饴弄孙为主，留意身体。</div>
+    </div>
+  </div>
+  <p class="reveal" style="margin-top:24px"><strong>一句话记住这盘的人生节奏：早年（6 到 35）木火起步、财根渐进、26 后小成；36 到 45 戊戌火局是最大一坎（守、稳、护身体）；46 岁后己亥庚子辛丑金水连珠三十年才真正回甘大发，是典型的晚发命。</strong></p>
+</section>
+
+<!-- ============ 流年 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">捌</div>
+    <div>
+      <div class="sec-title">近十年流年 · 逐年</div>
+      <div class="sec-sub">Year by Year · 2026–2035</div>
+    </div>
+  </div>
+  <p class="reveal">在大运背景下逐年看小气候。<span class="water">青字为顺</span>，<span class="fire">红字要当心</span>。这盘正处戊戌火局运中段，2031 迈入己亥水运大翻盘。</p>
+  <div class="years reveal">
+    <div class="yr warn"><span class="dot">慎</span><span class="y">2026</span><span class="gz">丙午</span><div class="t">虚41。火上加火、丙劫夺财、午午自刑加重。<b>防破财、上火失眠、口舌纠纷。</b>慎投资、慎担保。</div></div>
+    <div class="yr warn"><span class="dot">慎</span><span class="y">2027</span><span class="gz">丁未</span><div class="t">丁比肩、午未合火、未为燥土。火气仍旺，<b>求稳、护身体、守财为上。</b></div></div>
+    <div class="yr"><span class="y">2028</span><span class="gz">戊申</span><div class="t">戊伤官泄秀、<span style="color:var(--jade-bright)">申金正财得地、藏壬水官</span>、申冲提纲解火局。<b>火运里难得的喘息年，利财、利转机。</b></div></div>
+    <div class="yr lucky"><span class="dot">吉</span><span class="y">2029</span><span class="gz">己酉</span><div class="t">己土食神生财、<span style="color:var(--jade-bright)">酉金偏财得地</span>。<b>食神生财，财运较顺、可出成果的一年。</b></div></div>
+    <div class="yr warn"><span class="dot">慎</span><span class="y">2030</span><span class="gz">庚戌</span><div class="t">庚财透但戌引动寅午戌三合火局，<b>财被火熔、破耗年</b>。守财，别冒进合伙。</div></div>
+    <div class="yr lucky"><span class="dot">吉</span><span class="y">2031</span><span class="gz">辛亥</span><div class="t">进己亥运。辛偏财、<span style="color:var(--jade-bright)">亥水正官（用神到位）</span>、水克旺火。<b>财官齐到、调候补命，黄金转折之年。</b></div></div>
+    <div class="yr"><span class="y">2032</span><span class="gz">壬子</span><div class="t"><span style="color:var(--jade-bright)">壬子纯水（用神大到位）</span>，子午冲旺火。<b>事业有大转机，但奔波冲击大、变动多。</b></div></div>
+    <div class="yr lucky"><span class="dot">吉</span><span class="y">2033</span><span class="gz">癸丑</span><div class="t">癸水七杀、丑湿土晦火生金藏水。<b>调候补命的最佳流年，财与心境俱顺。</b></div></div>
+    <div class="yr warn"><span class="dot">慎</span><span class="y">2034</span><span class="gz">甲寅</span><div class="t">甲印透、寅木引动寅午半合火，木火齐助旺。<b>破财与健康警戒年，宜守。</b></div></div>
+    <div class="yr warn"><span class="dot">慎</span><span class="y">2035</span><span class="gz">乙卯</span><div class="t">乙卯木（偏印）生火为仇、卯午相破。注意情绪与健康，宜守不宜动。</div></div>
+  </div>
+</section>
+
+<!-- ============ 分维度详断 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">玖</div>
+    <div>
+      <div class="sec-title">分维度详断</div>
+      <div class="sec-sub">Life Dimensions in Detail</div>
+    </div>
+  </div>
+
+  <div class="reveal" style="margin-bottom:48px">
+    <div class="divider"><span>性 格</span></div>
+    <p style="margin-top:24px">底色是<strong>热情、聪明、好强、有才，但容易急</strong>。丁火主礼，本性温暖、重感情、讲义气、爱面子。丁火是灯烛之火（区别于丙火的大太阳），所以<span class="em">外表随和，内里有股不服输的硬劲</span>。</p>
+    <p>正印甲木透出、又坐文昌，<b style="color:var(--gold-bright)">聪明、有文采、悟性好、学东西快</b>。<span class="basis">正印透 + 文昌将星</span> 将星加身又添一份威仪与统御气，天生有领导相。短板在「冲」：火太旺缺水，情绪起落大、急性子、自尊心强，有时仗着有才得罪人。<strong>修身养性、把火气压一压，命会顺很多。</strong></p>
+  </div>
+
+  <div class="reveal" style="margin-bottom:48px">
+    <div class="divider"><span>事 业</span></div>
+    <p style="margin-top:24px">结论：<strong>靠自身本事打拼、做主导，方向选水、金类，晚运才是真正的发达期。</strong>建禄格身旺喜泄耗，适合独立创业、专业立身、智慧型工作（食伤泄秀），靠组织论资排辈那套不适合。</p>
+    <p>日坐酉金偏财、与财有缘，加上将星的统御气，适合<b style="color:var(--gold-bright)">当核心、自己主导</b>。<span class="fire">天干两丙劫财、争利的同辈多</span>，纯合伙容易起争抢，要合伙就把分工股权划清。行业按用神取：<b style="color:var(--jade-bright)">金融、贸易、流通、物流、数据互联网、水产、五金机械（属金水）</b>为佳；避开能源、电力、餐饮、光电这些纯火行业。方向往<strong>北方、西方</strong>更顺。财官待运，<strong>46 岁后金水大运到位，才是事业真正起飞的三十年。</strong></p>
+  </div>
+
+  <div class="reveal" style="margin-bottom:48px">
+    <div class="divider"><span>财 运</span></div>
+    <p style="margin-top:24px">结论：<strong>有财缘、能任财，但火旺年守不住，核心是钱被兄弟分、被火烧。</strong>日主自坐酉金偏财、财星坐长生，比一般火炎命的「财弱被劫」要好，<b style="color:var(--gold-bright)">本身善经营、能驾驭财</b>；只是比劫旺（两丙加建禄），仍有「群劫争财」的隐患。</p>
+    <p>得财靠两条路：一是<b style="color:var(--gold-bright)">凭才华手艺与智慧挣</b>（食伤生财），二是<b style="color:var(--jade-bright)">走金水的运和年份</b>（己酉、辛亥、癸丑等年，以及 46 岁后己亥庚子辛丑三步大运）。最忌在火旺年破耗（2026、2030，以及戊戌火局运）。<strong>理财宜稳、不投机、不冒进合伙</strong>，对这种命型，守住比赚到更重要。</p>
+  </div>
+
+  <div class="reveal" style="margin-bottom:48px">
+    <div class="divider"><span>婚 姻 · 感 情</span></div>
+    <p style="margin-top:24px">坦白说，这盘的感情<strong>有亮点也有功课</strong>：配偶宫坐妻星是好底子，但桃花旺、比劫旺需要专一经营。</p>
+    <p>男命以财为妻。亮点是<span class="water">日支酉金正是妻星、且坐长生</span><span class="basis">妻星坐妻宫</span>，主夫妻有缘、配偶得力。功课在三处：其一，<span class="fire">两丙劫财旺</span>，群劫既争财也争妻，易有竞争；其二，月时两午皆带<span class="fire">桃花</span>、将星桃花并见，异性缘旺、易生牵扯；其三，火旺缺水，性子急需对方降火。</p>
+    <p><b>实操建议：</b>宜<strong>晚婚</strong>（火气最旺的年轻时结婚最易出问题）；找<b style="color:var(--jade-bright)">性格柔和、属水或属金的另一半</b>（北方、西方人），能给降火；桃花旺者贵在专一。留意逢冲合婚姻宫之年（卯年冲酉、辰年合酉）感情有变动，提前经营。</p>
+  </div>
+
+  <div class="reveal" style="margin-bottom:48px">
+    <div class="divider"><span>健 康</span></div>
+    <p style="margin-top:24px">结论：<strong>火太旺水太枯，首要护心脏、血压、眼睛和睡眠。</strong></p>
+    <p>五行配脏腑，这盘<span class="fire">火过旺、水枯竭</span>：第一隐患是<b style="color:var(--cinnabar-bright)">心脏、血压、血液、眼目、神经睡眠</b>（火主心血神志，易高血压、心慌、上火、失眠、眼干）；第二隐患是<b>肾、泌尿、骨</b>（水太弱，先天偏虚）；火土燥也要留意肠胃、咽喉。高发在火旺的运和年，<strong>尤其 36 到 45 那步戊戌火局运，和丙午、丁未等火年</strong>。养生方向就一个字：<span class="water">水</span>。多喝水、多近水（游泳特别合）、饮食降火、作息别熬、把情绪和火气压下来，这是治本。</p>
+  </div>
+
+  <div class="reveal" style="margin-bottom:48px">
+    <div class="divider"><span>学 业 · 才 华</span></div>
+    <p style="margin-top:24px">结论：<strong>聪明有文采，正印加文昌，走的是正统学习与考试缘的路线。</strong>正印甲木透月干、生身有力，又坐文昌贵人，<b style="color:var(--gold-bright)">学习力强、有靠山式的循序学习、考运不弱</b>。</p>
+    <p><span class="basis">正印透 + 文昌 + 将星</span> 这组合让其<strong>适合走文化、文职、管理、专业技术</strong>的正规路线，配上将星的统御气，利于在组织或专业里担纲领头。与那种「伤官自学、钻研冷门」的才华命型不同，这盘更偏正印文昌的稳健学习路。</p>
+  </div>
+
+  <div class="reveal">
+    <div class="divider"><span>六 亲</span></div>
+    <p style="margin-top:24px"><b style="color:var(--gold-bright)">父母与出身：</b>正印甲木透月干、生身有力，又有<strong>天乙、月德贵人</strong>照拂<span class="basis">月德在年时</span>，主得长辈庇荫、母缘佳、家教端正，出身有靠山。</p>
+    <p><b style="color:var(--gold-bright)">兄弟朋友：</b>比劫极旺（两丙加建禄），<strong>同辈手足缘旺、朋友不少</strong>，<span class="fire">但极易因钱起争抢</span>，合伙担保尤其要防。</p>
+    <p><b style="color:var(--gold-bright)">配偶：</b>日坐妻星酉金长生，夫妻有缘、配偶得力，唯桃花比劫旺，贵在专一经营。</p>
+    <p><b style="color:var(--gold-bright)">子女：</b>男命以官杀（水）为子。原局官杀不现，<strong>子女缘要靠走水运的中晚年（己亥、庚子等运）接上</strong>。时坐午火劫财，主与子女各有主见、相处宜给空间。</p>
+  </div>
+</section>
+
+<!-- ============ 趋避 ============ -->
+<section>
+  <div class="sec-head reveal">
+    <div class="sec-no">拾</div>
+    <div>
+      <div class="sec-title">趋吉避凶 · 实用清单</div>
+      <div class="sec-sub">Practical Guidance</div>
+    </div>
+  </div>
+  <p class="reveal">把上面的道理落到能做的事，照着走：</p>
+  <div class="avoid reveal">
+    <div class="av"><div class="k">方位</div><div class="v"><span class="yes">宜 北方、西方</span>（定居、发展、买房选向）　<span class="no">忌 南方</span></div></div>
+    <div class="av"><div class="k">颜色</div><div class="v"><span class="yes">宜 黑、蓝、白、金银</span>　<span class="no">忌 红、紫、橙、青绿</span></div></div>
+    <div class="av"><div class="k">数字</div><div class="v"><span class="yes">宜 1、6（水）、4、9（金）</span></div></div>
+    <div class="av"><div class="k">行业</div><div class="v"><span class="yes">宜 金融、贸易、物流、数据、流通、五金、水产</span>　<span class="no">忌 纯火行业</span></div></div>
+    <div class="av"><div class="k">养生</div><div class="v">多近水、多喝水、游泳；<span class="yes">降火安神、戒急躁</span></div></div>
+    <div class="av"><div class="k">理财</div><div class="v"><span class="no">不投机、不担保、不冒进合伙</span>；火旺年尤其守财</div></div>
+    <div class="av"><div class="k">婚姻</div><div class="v">晚婚、找柔和的水金型伴侣、专一经营、留空间</div></div>
+    <div class="av"><div class="k">关键坎</div><div class="v"><span class="no">36 – 45 岁戊戌火局运</span>：护心血管、守财不冒进、压脾气、避合伙纠纷与口舌</div></div>
+  </div>
+</section>
+
+<!-- ============ 总评 ============ -->
+<section>
+  <div class="final reveal">
+    <p>丁火生午月建禄，寅午半合、双午自刑、两丙帮身而满盘无水。这是一座<strong>生在盛夏正午、烧得最旺却独缺一瓢水的火炉</strong>：聪明、有文采（正印文昌）、有威仪（将星）、行动力猛、同辈缘旺，又与财有缘（日坐财星长生）。</p>
+    <p>这盘的两块软肋，是<strong>火炎易躁伤身（护心血管）</strong>和<strong>比劫争财、桃花动（守财、专情）</strong>，都和「火太旺、缺水来调」有关。出身有正印与贵人的底子，是一张典型的<strong>晚发</strong>盘：早年积累、中年一坎、晚运三十年金水连珠才真正回甘。</p>
+    <div class="bigline">人生节奏<br>6 到 35 木火起步慢积累<br>36 到 45 火局最险要守稳护身<br>46 以后水到运转 · 晚景大发</div>
+    <div class="eight">趋吉就八个字：</div>
+    <div class="bigline" style="color:var(--fire)">走金水 · 向北西<br>凭才学 · 守住财<br>缓婚姻 · 降火气</div>
+  </div>
+</section>
+
+</div>
+
+<!-- ============ 页脚 ============ -->
+<footer>
+  <p class="disc">本报告是传统文化研究与自我认知参考，非预言或保证，不承诺改运消灾。命理讲的是倾向与概率，真碰上结婚、健康、大笔投资这类大事，请把它当一个参考维度，最终结合现实理性拍板。本盘采用虚拟生辰，由精确排盘脚本推算，方法论遵循「先定旺衰用神、再断一切」，每条断语皆标依据，孤证不立。</p>
+  <div class="sig-stamp">八字一卷 · 示例</div>
+  <div class="date">八字命理 SKILL · 可视化示例</div>
+</footer>
+
+<script>
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
