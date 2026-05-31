@@ -5,7 +5,7 @@
 ![Version](https://img.shields.io/badge/version-1.1.0-7c3aed.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![License](https://img.shields.io/badge/license-PolyForm%20NC-64748b.svg)
 
 **黑哥算命 · 四柱八字精确排盘与系统推演 | A Bazi engine that computes first, then reasons**
 
@@ -316,4 +316,15 @@ This project is a research and study tool for traditional Chinese metaphysics (B
 
 ## 许可证 | License
 
-MIT. 随便用，随便改，随便分享。代码开源，理性看命。
+PolyForm Noncommercial 1.0.0 © 2026 [HeiGeAi (Blake Xu)](https://github.com/HeiGeAi)
+
+本项目源码公开，但采用 **PolyForm Noncommercial License 1.0.0**，是一个"开源 + 限定非商业用途"的协议。要点：
+
+1. **非商业使用免费** — 个人研究、学习、自用、兴趣项目，随便用、随便改、随便分享
+2. **必须保留署名** — 二开、Fork、再分发都要保留版权与来源声明，别去掉署名冒充原创
+3. **禁止任何商业用途** — 不得用于盈利产品、付费服务、商业化分发，或任何带商业目的的场景；**未经授权的商业化即视为违反本协议**
+4. **商用须先授权** — 想商用？先开 Issue 或私信作者单独谈授权，谈拢了再用
+
+完整法律条款见 [`LICENSE`](./LICENSE)。代码开源，理性看命。
+
+**English:** This project is source-available under **PolyForm Noncommercial 1.0.0** — free for any noncommercial use (study, research, personal projects), with attribution required. **Any commercial use requires a separate license from the author** (open an Issue or reach out). Unauthorized commercial use violates the license.
