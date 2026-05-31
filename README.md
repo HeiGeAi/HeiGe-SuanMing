@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/cover.png" alt="HeiGe-SuanMing · 像做技术分析一样算命" width="100%">
+</div>
+
 # HeiGe-SuanMing
 
 <div align="center">
@@ -263,6 +267,8 @@ HeiGe-SuanMing/
 │   ├── 04_shishen_xiangyi.md
 │   ├── 05_geju.md
 │   └── 06_shensha.md
+├── assets/
+│   └── cover.png                 # README 题图
 ├── requirements.txt
 ├── LICENSE
 └── README.md
