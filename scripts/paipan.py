@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-八字排盘引擎 v1.1 · HeiGe-SuanMing / bazi-mingli skill
+八字排盘引擎 v1.2 · HeiGe-SuanMing / bazi-mingli skill
 精确排四柱、藏干、十神、纳音、长生十二宫、五行力量、神煞、刑冲合会、大运、流年。
+
+Required Notice: Copyright 2026 HeiGeAi (Blake Xu) (https://github.com/HeiGeAi)
+License: PolyForm Noncommercial 1.0.0（完整条款见仓库根 LICENSE）
 
 排盘核心依赖 lunar_python：自动以「立春」定年柱、以「节气」定月柱、处理农历闰月，
 规避模型手推干支时最常犯的三类错误（年柱误用正月初一、月柱误用农历月、忽略真太阳时）。
+支持公历年份范围：1600-2200。
 
 安装：pip3 install lunar_python
 
@@ -13,6 +17,7 @@
   python3 paipan.py 1990 5 15 14 30 --gender male
   python3 paipan.py 1990 5 15 14 30 --gender female --json
   python3 paipan.py 1990 4 21 14 30 --gender male --lunar         # 按农历输入
+  python3 paipan.py 2023 -2 15 14 30 --gender male --lunar        # 闰月用负数月：-2=闰二月
   python3 paipan.py 1990 5 15 14 30 --gender male --lng 113.3     # 经度→真太阳时校正
   python3 paipan.py 1990 5 15 14 30 --gender male --years 2024 12 # 从2024年起排12个流年
 """
@@ -23,7 +28,10 @@ import math
 import sys
 from datetime import datetime, timedelta
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
+
+# 支持的公历年份范围（lunar_python 节气与历表精度有保证的区间）
+YEAR_MIN, YEAR_MAX = 1600, 2200
 
 # ============================================================
 # 基础常量
@@ -66,7 +74,7 @@ ZHI_HAI = [frozenset("子未"), frozenset("丑午"), frozenset("寅巳"),
            frozenset("卯辰"), frozenset("申亥"), frozenset("酉戌")]
 XING3_A = set("寅巳申")   # 无恩之刑
 XING3_B = set("丑戌未")   # 恃势之刑
-XING_ZI = set("辰午酉亥")  # 自刑
+XING_ZI = "辰午酉亥"      # 自刑（按固定次序遍历，保证输出顺序确定）
 
 
 def ten_god(day_gan, other_gan):
@@ -221,6 +229,13 @@ HUAGAI = {"申子辰": "辰", "寅午戌": "戌", "巳酉丑": "丑", "亥卯未
 JIANGXING = {"申子辰": "子", "寅午戌": "午", "巳酉丑": "酉", "亥卯未": "卯"}
 TIANDE = {"寅": "丁", "卯": "申", "辰": "壬", "巳": "辛", "午": "亥", "未": "甲",
           "申": "癸", "酉": "寅", "戌": "丙", "亥": "乙", "子": "巳", "丑": "庚"}
+# 天德按月支取，所得既可能是天干（如寅月丁）也可能是地支（卯月申、午月亥、酉月寅、子月巳），
+# 干透天干、支见地支均算（references/06：按月支取对应天干/支透于四柱）。
+
+# 神煞输出固定次序：按 references/06 吉神 → 动象中性 → 凶煞的传统排列
+SHENSHA_ORDER = ["天乙贵人", "天德贵人", "月德贵人", "文昌贵人", "禄神", "将星", "金舆",
+                 "驿马", "桃花", "华盖", "红艳", "羊刃", "魁罡", "孤辰", "寡宿"]
+_PILLAR_ORDER = {"年": 0, "月": 1, "日": 2, "时": 3}
 
 
 def _sanhe_of(zhi):
@@ -257,9 +272,15 @@ def compute_shensha(pillars):
     if day_gan in YANGREN:
         hit("羊刃", {YANGREN[day_gan]})
 
+    # 天德贵人：按月支取，寅月丁等为天干（查四干），卯月申、午月亥、酉月寅、子月巳为地支（查四支）
     td = TIANDE.get(month_zhi)
-    if td and td in gans:
-        res["天德贵人"] = [labels[i] for i, g in enumerate(gans) if g == td]
+    if td:
+        if td in GAN:
+            found = [labels[i] for i, g in enumerate(gans) if g == td]
+        else:
+            found = [labels[i] for i, z in enumerate(zhis) if z == td]
+        if found:
+            res["天德贵人"] = found
     for combo, yd in YUEDE.items():
         if month_zhi in combo and yd in gans:
             res["月德贵人"] = [labels[i] for i, g in enumerate(gans) if g == yd]
@@ -274,7 +295,9 @@ def compute_shensha(pillars):
     if pillars[2][0] + pillars[2][1] in KUIGANG:
         res["魁罡"] = ["日"]
 
-    for base_zhi in {year_zhi, day_zhi}:
+    # 年支为主、日支为辅，固定先后（避免 set 迭代顺序随哈希漂移）
+    bases = [year_zhi] if year_zhi == day_zhi else [year_zhi, day_zhi]
+    for base_zhi in bases:
         sh = _sanhe_of(base_zhi)
         if not sh:
             continue
@@ -285,7 +308,12 @@ def compute_shensha(pillars):
                     res.setdefault(name, [])
                     if labels[i] not in res[name]:
                         res[name].append(labels[i])
-    return res
+
+    # 输出确定性：神煞按传统次序（吉神→中性→凶煞），柱标按年月日时排序
+    for name in res:
+        res[name] = sorted(res[name], key=lambda x: _PILLAR_ORDER[x])
+    return dict(sorted(res.items(),
+                       key=lambda kv: SHENSHA_ORDER.index(kv[0]) if kv[0] in SHENSHA_ORDER else len(SHENSHA_ORDER)))
 
 
 # ============================================================
@@ -313,6 +341,25 @@ def _dishi_of(gan, zhi):
 
 
 # ============================================================
+# 流年（与年柱同一套立春分界逻辑）
+# ============================================================
+def liunian_ganzhi(year):
+    """公历年 year 对应的流年干支：取该年年中（必在立春后）的八字年柱，
+    与本命年柱走同一套 lunar_python 立春分界逻辑。"""
+    from lunar_python import Solar
+    return Solar.fromYmd(year, 6, 1).getLunar().getEightChar().getYear()
+
+
+def liunian_start_year(dt):
+    """流年默认起始年：按立春分界。当前时刻若在本公历年立春之前，
+    流年仍属上一干支年，起始年取 dt.year - 1。"""
+    from lunar_python import Solar
+    gz_now = Solar.fromYmdHms(dt.year, dt.month, dt.day, dt.hour,
+                              dt.minute, 0).getLunar().getEightChar().getYear()
+    return dt.year if gz_now == liunian_ganzhi(dt.year) else dt.year - 1
+
+
+# ============================================================
 # 主排盘
 # ============================================================
 def build_chart(args):
@@ -330,10 +377,18 @@ def build_chart(args):
         y, mo, d, h, mi = (solar.getYear(), solar.getMonth(), solar.getDay(),
                            solar.getHour(), solar.getMinute())
 
-    if args.lng is not None and not args.lunar:
+    # 公历输入（农历则为转换后的公历），展示用，真太阳时校正不覆盖它
+    input_solar_str = f"{y}-{mo:02d}-{d:02d} {h:02d}:{mi:02d}"
+    true_solar_str = None
+
+    # 农历输入先转公历（上方已转），再做真太阳时校正，两者可叠加
+    if args.lng is not None:
         dt, delta = true_solar_time(datetime(y, mo, d, h, mi), args.lng, args.tz)
         y, mo, d, h, mi = dt.year, dt.month, dt.day, dt.hour, dt.minute
-        corr_note = f"经度{args.lng}°、时区UTC+{args.tz} → 真太阳时校正 {delta:+} 分钟"
+        true_solar_str = f"{y}-{mo:02d}-{d:02d} {h:02d}:{mi:02d}"
+        corr_note = f"经度{args.lng}°、时区UTC{args.tz:+.1f} → 真太阳时校正 {delta:+} 分钟"
+        if abs(delta) > 120:
+            corr_note += "　※ 强提示：校正幅度超过 ±120 分钟，请核对经度与时区（--tz）是否匹配"
 
     solar = Solar.fromYmdHms(y, mo, d, h, mi, 0)
     lunar = solar.getLunar()
@@ -389,18 +444,25 @@ def build_chart(args):
                            "gan_shen": ten_god(day_gan, g), "zhi_shen": zhi_ten_gods(day_gan, z),
                            "dishi": _dishi_of(day_gan, z)})
 
-    # 流年
-    start_year, span = (args.years[0], args.years[1]) if args.years else (datetime.now().year, 10)
+    # 起运岁数统一虚岁口径（references/11：三日折一岁得起运虚岁；与大运列表同口径）
+    first_dayun = next((dy for dy in dayun_list if dy["ganzhi"]), None)
+    start_age_xu = first_dayun["start_age"] if first_dayun else yun.getStartYear() + 1
+
+    # 流年：干支与年柱同一套立春分界逻辑；默认起始年也按立春定（立春前属上一干支年）
+    start_year, span = (args.years[0], args.years[1]) if args.years else (liunian_start_year(datetime.now()), 10)
     liunian = []
     for yy in range(start_year, start_year + span):
-        g, z = GAN[(yy - 4) % 10], ZHI[(yy - 4) % 12]
-        liunian.append({"year": yy, "ganzhi": g + z, "gan_shen": ten_god(day_gan, g),
+        gz = liunian_ganzhi(yy)
+        g, z = gz[0], gz[1]
+        liunian.append({"year": yy, "ganzhi": gz, "gan_shen": ten_god(day_gan, g),
                         "zhi_shen": zhi_ten_gods(day_gan, z), "age": yy - solar.getYear() + 1})
 
     return {
         "version": __version__,
+        "disclaimer": "本排盘与推演仅供传统文化研究与自我认知参考，不构成对命运、健康、婚姻、财富的预言或保证。",
         "input": {
-            "solar": f"{solar.getYear()}-{solar.getMonth():02d}-{solar.getDay():02d} {solar.getHour():02d}:{solar.getMinute():02d}",
+            "solar": input_solar_str,
+            "true_solar": true_solar_str,
             "lunar": lunar.toString(), "shengxiao": SHENGXIAO[pillars[0][1]],
             "xingzuo": solar.getXingZuo(), "gender": "男" if gender_int else "女",
             "jieqi": jieqi, "correction": corr_note,
@@ -414,7 +476,7 @@ def build_chart(args):
         "zhi_relations": zhi_rel, "gan_relations": gan_rel, "shensha": shensha,
         "taiyuan": ec.getTaiYuan(), "minggong": ec.getMingGong(), "shengong": ec.getShenGong(),
         "yun_direction": "顺排" if forward else "逆排",
-        "start_age": yun.getStartYear(), "start_solar": yun.getStartSolar().toYmd(),
+        "start_age": start_age_xu, "start_solar": yun.getStartSolar().toYmd(),
         "dayun": dayun_list, "liunian": liunian,
     }
 
@@ -423,13 +485,14 @@ def build_chart(args):
 # 文本渲染
 # ============================================================
 def render_text(c):
-    L, P = [], None
     out = []
     def P(s=""): out.append(s)
     inp = c["input"]
     cols = ["年", "月", "日", "时"]
     P("════════════════════ 八字命盘 ════════════════════")
     P(f"公历：{inp['solar']}　性别：{inp['gender']}　生肖：{inp['shengxiao']}　星座：{inp['xingzuo']}")
+    if inp.get("true_solar"):
+        P(f"真太阳时：{inp['true_solar']}（按经度校正，排盘以此为准）")
     P(f"农历：{inp['lunar']}")
     if inp["jieqi"]:
         P(f"节气：{inp['jieqi']}")
@@ -471,7 +534,7 @@ def render_text(c):
     if c["shensha"]:
         P("【神煞】" + "　".join(f"{k}({'·'.join(v)})" for k, v in c["shensha"].items()))
         P("")
-    P(f"【大运】{c['yun_direction']}　{c['start_age']}岁起运（{c['start_solar']}）")
+    P(f"【大运】{c['yun_direction']}　{c['start_age']}岁起运（虚岁，{c['start_solar']}）")
     for dy in c["dayun"]:
         if not dy["ganzhi"]:
             P(f"  幼运 {dy['start_age']}-{dy['end_age']}岁（{dy['start_year']}-）")
@@ -487,33 +550,70 @@ def render_text(c):
     return "\n".join(out)
 
 
+def _span_int(s):
+    v = int(s)
+    if v < 1:
+        raise argparse.ArgumentTypeError(f"须为 ≥1 的整数，收到 {s}")
+    return v
+
+
+def validate_args(args):
+    """输入校验：年份范围、经度范围、流年区间、公历/农历日期合法性（含闰月与小月）。"""
+    if not (YEAR_MIN <= args.year <= YEAR_MAX):
+        sys.exit(f"年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {args.year}。")
+    if not (0 <= args.hour <= 23 and 0 <= args.minute <= 59):
+        sys.exit("输入有误：时0-23、分0-59。")
+    if args.lng is not None and not (-180.0 <= args.lng <= 180.0):
+        sys.exit(f"经度超出范围：--lng 须在 -180 ~ 180 之间（东经为正、西经为负），收到 {args.lng}。")
+    if args.years and not (YEAR_MIN <= args.years[0] and args.years[0] + args.years[1] - 1 <= YEAR_MAX):
+        sys.exit(f"流年区间超出支持范围：--years 须落在公历 {YEAR_MIN}-{YEAR_MAX} 年内。")
+
+    if args.lunar:
+        if not (1 <= args.month <= 12 or -12 <= args.month <= -1):
+            sys.exit("农历月须为 1-12，闰月用对应负数表示（如 -2=闰二月）。")
+        if not (1 <= args.day <= 30):
+            sys.exit("农历日须为 1-30。")
+        try:
+            from lunar_python import LunarMonth
+        except ImportError:
+            sys.exit("缺少依赖 lunar_python，请先运行：pip3 install lunar_python")
+        mdesc = f"闰{-args.month}月" if args.month < 0 else f"{args.month}月"
+        lm = LunarMonth.fromYm(args.year, args.month)
+        if lm is None:
+            sys.exit(f"农历 {args.year} 年没有{mdesc}，请核对（闰月用负数月表示，如 -2=闰二月）。")
+        if args.day > lm.getDayCount():
+            sys.exit(f"农历 {args.year} 年{mdesc}是小月，只有 {lm.getDayCount()} 天，没有 {args.day} 日。")
+    else:
+        if not (1 <= args.month <= 12 and 1 <= args.day <= 31):
+            sys.exit("输入有误：月1-12、日1-31。农历请加 --lunar（闰月用负数月，如 -2=闰二月）。")
+        try:
+            datetime(args.year, args.month, args.day, args.hour, args.minute)
+        except ValueError as e:
+            sys.exit(f"日期非法：{e}")
+
+
 def main():
-    ap = argparse.ArgumentParser(description=f"八字排盘引擎 v{__version__}")
+    ap = argparse.ArgumentParser(description=f"八字排盘引擎 v{__version__}（支持公历 {YEAR_MIN}-{YEAR_MAX} 年）")
     ap.add_argument("year", type=int)
     ap.add_argument("month", type=int)
     ap.add_argument("day", type=int)
     ap.add_argument("hour", type=int)
     ap.add_argument("minute", type=int, nargs="?", default=0)
     ap.add_argument("--gender", choices=["male", "female"], required=True)
-    ap.add_argument("--lunar", action="store_true", help="输入按农历(默认阳历)")
-    ap.add_argument("--lng", type=float, default=None, help="出生地经度(东经正)，启用真太阳时校正")
+    ap.add_argument("--lunar", action="store_true",
+                    help="输入按农历(默认阳历)；闰月用负数月表示，如 -2=闰二月")
+    ap.add_argument("--lng", type=float, default=None,
+                    help="出生地经度(东经正、西经负，范围-180~180)，启用真太阳时校正")
     ap.add_argument("--tz", type=float, default=8.0, help="时区偏移(默认+8)")
     ap.add_argument("--zi-sect", type=int, choices=[1, 2], default=None,
                     help="子时流派：1=晚子(23点)换日，2=不换日；不传用库默认")
-    ap.add_argument("--years", type=int, nargs=2, metavar=("START", "SPAN"),
-                    help="流年起始年与年数，如 --years 2024 12")
+    ap.add_argument("--years", type=_span_int, nargs=2, metavar=("START", "SPAN"),
+                    help="流年起始年与年数(均须≥1)，如 --years 2024 12")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"bazi paipan v{__version__}")
     args = ap.parse_args()
 
-    if not (1 <= args.month <= 12 and 1 <= args.day <= 31 and 0 <= args.hour <= 23 and 0 <= args.minute <= 59):
-        sys.exit("输入有误：月1-12、日1-31、时0-23、分0-59。农历请加 --lunar。")
-    if not args.lunar:
-        try:
-            datetime(args.year, args.month, args.day, args.hour, args.minute)
-        except ValueError as e:
-            sys.exit(f"日期非法：{e}")
-
+    validate_args(args)
     chart = build_chart(args)
     if args.json:
         print(json.dumps(chart, ensure_ascii=False, indent=2))

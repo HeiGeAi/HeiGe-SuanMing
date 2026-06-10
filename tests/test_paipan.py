@@ -228,6 +228,73 @@ class TestShenSha(unittest.TestCase):
         self.assertIn("桃花", ss)
 
 
+class TestTianDe(unittest.TestCase):
+    """天德贵人：按月支取所得既有天干（如寅月丁，查四干）也有地支
+    （卯月申、午月亥、酉月寅、子月巳，查四支），references/06 古法定式。"""
+
+    def test_mao_month_branch_shen(self):
+        # 卯月天德=申(地支)，申在日支
+        ss = paipan.compute_shensha([("甲", "子"), ("丙", "卯"), ("乙", "申"), ("丁", "丑")])
+        self.assertIn("天德贵人", ss)
+        self.assertIn("日", ss["天德贵人"])
+
+    def test_wu_month_branch_hai(self):
+        # 午月天德=亥(地支)，亥在年支
+        ss = paipan.compute_shensha([("甲", "亥"), ("庚", "午"), ("乙", "丑"), ("丁", "辰")])
+        self.assertIn("天德贵人", ss)
+        self.assertIn("年", ss["天德贵人"])
+
+    def test_you_month_branch_yin(self):
+        # 酉月天德=寅(地支)，寅在年支
+        ss = paipan.compute_shensha([("甲", "寅"), ("乙", "酉"), ("丙", "子"), ("丁", "丑")])
+        self.assertIn("天德贵人", ss)
+        self.assertIn("年", ss["天德贵人"])
+
+    def test_zi_month_branch_si(self):
+        # 子月天德=巳(地支)，巳在日支
+        ss = paipan.compute_shensha([("甲", "辰"), ("丙", "子"), ("丁", "巳"), ("戊", "申")])
+        self.assertIn("天德贵人", ss)
+        self.assertIn("日", ss["天德贵人"])
+
+    def test_yin_month_stem_ding_regression(self):
+        # 寅月天德=丁(天干)，丁透年干——天干型查法回归
+        ss = paipan.compute_shensha([("丁", "卯"), ("壬", "寅"), ("甲", "子"), ("乙", "丑")])
+        self.assertIn("天德贵人", ss)
+        self.assertIn("年", ss["天德贵人"])
+
+
+class TestShenShaDeterminism(unittest.TestCase):
+    """神煞输出确定性：固定传统次序（吉神→中性→凶煞），柱标按年月日时，
+    不随哈希随机化漂移。"""
+
+    def test_order_follows_tradition(self):
+        ss = paipan.compute_shensha([("庚", "午"), ("辛", "巳"), ("庚", "辰"), ("癸", "未")])
+        keys = list(ss.keys())
+        idx = [paipan.SHENSHA_ORDER.index(k) for k in keys if k in paipan.SHENSHA_ORDER]
+        self.assertEqual(idx, sorted(idx), "神煞键序未按 SHENSHA_ORDER 排列")
+
+    def test_pillar_labels_sorted(self):
+        ss = paipan.compute_shensha([("庚", "午"), ("辛", "巳"), ("庚", "辰"), ("癸", "未")])
+        order = {"年": 0, "月": 1, "日": 2, "时": 3}
+        for name, labs in ss.items():
+            self.assertEqual(labs, sorted(labs, key=lambda x: order[x]),
+                             f"{name} 柱标未按年月日时排序")
+
+    def test_output_invariant_across_hash_seeds(self):
+        # 子进程分别用不同 PYTHONHASHSEED 跑同一命盘，输出必须逐字节一致
+        import subprocess
+        script = os.path.join(_SCRIPTS, "paipan.py")
+        cmd = [sys.executable, script, "1990", "6", "23", "0", "30",
+               "--gender", "male", "--years", "2024", "12"]
+        outs = []
+        for seed in ("1", "99"):
+            env = dict(os.environ, PYTHONHASHSEED=seed)
+            r = subprocess.run(cmd, capture_output=True, text=True, env=env)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            outs.append(r.stdout)
+        self.assertEqual(outs[0], outs[1], "不同哈希种子下输出不一致")
+
+
 class TestWuXingCount(unittest.TestCase):
     def test_count_and_lack(self):
         # 年庚午 月辛巳 日庚辰 时癸未（1990 样例四柱）
@@ -371,6 +438,144 @@ class TestIntegrationTrueSolar(unittest.TestCase):
         self.assertEqual(c["pillars"]["时"][1], "未")
 
 
+class TestIntegrationLiuNianLiChun(unittest.TestCase):
+    """流年与年柱同一套立春分界逻辑。"""
+
+    def test_liunian_ganzhi_matches_year_pillar(self):
+        self.assertEqual(paipan.liunian_ganzhi(2024), "甲辰")
+        self.assertEqual(paipan.liunian_ganzhi(2025), "乙巳")
+        self.assertEqual(paipan.liunian_ganzhi(1990), "庚午")
+
+    def test_default_start_year_before_lichun(self):
+        from datetime import datetime
+        # 2024 立春为 2/4：立春前仍属癸卯年，流年起始年应取 2023
+        self.assertEqual(paipan.liunian_start_year(datetime(2024, 2, 3, 12, 0)), 2023)
+
+    def test_default_start_year_after_lichun(self):
+        from datetime import datetime
+        self.assertEqual(paipan.liunian_start_year(datetime(2024, 2, 5, 12, 0)), 2024)
+
+    def test_build_chart_liunian_ganzhi(self):
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male", years=[2024, 2]))
+        self.assertEqual(c["liunian"][0]["ganzhi"], "甲辰")
+        self.assertEqual(c["liunian"][1]["ganzhi"], "乙巳")
+
+
+class TestIntegrationLunarLng(unittest.TestCase):
+    """--lunar 与 --lng 同传：农历先转公历，再做真太阳时校正，两者叠加生效。"""
+
+    def test_lunar_with_lng_applies_correction(self):
+        c = paipan.build_chart(make_args(1990, 4, 21, 14, 30, "male", lunar=True, lng=113.3))
+        self.assertIsNotNone(c["input"]["correction"], "农历输入时真太阳时校正被丢弃")
+        self.assertIsNotNone(c["input"]["true_solar"])
+        # 与等价的公历输入+经度校正结果完全一致
+        c2 = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male", lng=113.3))
+        self.assertEqual(c["pillars"], c2["pillars"])
+        self.assertEqual(c["input"]["true_solar"], c2["input"]["true_solar"])
+
+
+class TestIntegrationLeapMonth(unittest.TestCase):
+    """闰月输入：负数月表示闰月（lunar_python 约定），-2=闰二月。"""
+
+    def test_leap_2nd_month_2023(self):
+        # 2023 闰二月初一 = 公历 2023-03-22
+        c = paipan.build_chart(make_args(2023, -2, 1, 12, 0, "male", lunar=True))
+        self.assertEqual(c["input"]["solar"], "2023-03-22 12:00")
+        self.assertIn("闰二月", c["input"]["lunar"])
+
+
+class TestIntegrationSolarDisplay(unittest.TestCase):
+    """真太阳时校正后：公历行保留原始输入，校正时刻另起 true_solar。"""
+
+    def test_solar_keeps_original_true_solar_separate(self):
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male", lng=113.3))
+        self.assertEqual(c["input"]["solar"], "1990-05-15 14:30")
+        self.assertTrue(c["input"]["true_solar"].startswith("1990-05-15 14:0"))
+        self.assertNotEqual(c["input"]["solar"], c["input"]["true_solar"])
+
+    def test_no_lng_no_true_solar(self):
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male"))
+        self.assertIsNone(c["input"]["true_solar"])
+
+
+class TestIntegrationCorrectionDisplay(unittest.TestCase):
+    """时区显示与大幅校正强提示。"""
+
+    def test_negative_tz_display(self):
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male", lng=-75.0, tz=-5.0))
+        self.assertIn("UTC-5.0", c["input"]["correction"])
+        self.assertNotIn("UTC+-", c["input"]["correction"])
+
+    def test_large_correction_warning(self):
+        # 经度 0、时区 +8 → 校正约 -480 分钟，须出强提示
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male", lng=0.0))
+        self.assertIn("强提示", c["input"]["correction"])
+
+    def test_normal_correction_no_warning(self):
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male", lng=113.3))
+        self.assertNotIn("强提示", c["input"]["correction"])
+
+
+class TestIntegrationQiYunXuSui(unittest.TestCase):
+    """起运岁数统一虚岁口径（references/11：三日折一岁得起运虚岁），与大运列表一致。"""
+
+    def test_start_age_is_xusui(self):
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male"))
+        # 1990 年生、1997-08-04 起运 → 虚岁 8（1997-1990+1），与首步大运 start_age 一致
+        self.assertEqual(c["start_age"], 8)
+        first = next(d for d in c["dayun"] if d["ganzhi"])
+        self.assertEqual(c["start_age"], first["start_age"])
+
+
+class TestIntegrationJsonDisclaimer(unittest.TestCase):
+    def test_disclaimer_in_chart(self):
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male"))
+        self.assertIn("disclaimer", c)
+        self.assertIn("仅供", c["disclaimer"])
+
+
+class TestCliValidation(unittest.TestCase):
+    """命令行输入校验：越界经度 / 非法流年区间 / 年份范围 / 农历小月与不存在的闰月。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.script = os.path.join(_SCRIPTS, "paipan.py")
+
+    def _run(self, *argv):
+        import subprocess
+        return subprocess.run([sys.executable, self.script, *argv],
+                              capture_output=True, text=True)
+
+    def test_lng_out_of_range(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male", "--lng", "200")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("经度超出范围", r.stderr + r.stdout)
+
+    def test_years_span_zero(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male", "--years", "2024", "0")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("≥1", r.stderr + r.stdout)
+
+    def test_year_out_of_range(self):
+        r = self._run("1500", "5", "15", "14", "30", "--gender", "male")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("年份超出支持范围", r.stderr + r.stdout)
+
+    def test_lunar_short_month_day30(self):
+        # 农历 1990 年四月为小月（29 天），30 日应友好报错而非裸 traceback
+        r = self._run("1990", "4", "30", "12", "0", "--gender", "male", "--lunar")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("只有 29 天", r.stderr + r.stdout)
+        self.assertNotIn("Traceback", r.stderr)
+
+    def test_nonexistent_leap_month(self):
+        # 2023 年只有闰二月，闰三月应友好报错
+        r = self._run("2023", "-3", "1", "12", "0", "--gender", "male", "--lunar")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("没有闰3月", r.stderr + r.stdout)
+        self.assertNotIn("Traceback", r.stderr)
+
+
 class TestIntegrationRobustness(unittest.TestCase):
     """多样输入的鲁棒性：不崩溃 + 命盘不变量恒成立 + 可 JSON 序列化。
     把子时双流派、真太阳东西经、立春边界、农历(含闰年)、极早/未来年、
@@ -388,6 +593,8 @@ class TestIntegrationRobustness(unittest.TestCase):
         "立春前夜":        dict(year=2000, month=2, day=3, hour=23, minute=0, gender="female"),
         "农历输入":        dict(year=1990, month=9, day=1, hour=10, minute=0, gender="male", lunar=True),
         "农历闰年":        dict(year=2023, month=4, day=15, hour=8, minute=0, gender="female", lunar=True),
+        "农历闰月负数月":  dict(year=2023, month=-2, day=15, hour=8, minute=0, gender="female", lunar=True),
+        "农历加真太阳时":  dict(year=1990, month=4, day=21, hour=14, minute=30, gender="male", lunar=True, lng=113.3),
         "极早年1920":      dict(year=1920, month=1, day=1, hour=0, minute=0, gender="male"),
         "未来年2050":      dict(year=2050, month=12, day=31, hour=23, minute=59, gender="female"),
         "自定义流年":      dict(year=1990, month=6, day=23, hour=0, minute=30, gender="male", years=[2030, 5]),
