@@ -35,7 +35,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 
 ### 它能做什么
 
-- ✅ **精确排盘**：立春定年、节气定月、真太阳时校正，闰月与子时流派可选
+- ✅ **精确排盘**：立春定年、节气定月、真太阳时校正，闰月（负数月输入，如 `-2` = 闰二月）与子时流派可选，支持公历 1600-2200 年
 - ✅ **旺衰量化**：五行力量加权打分，给出同党异党参考，再结合月令通根综合定档
 - ✅ **取用神**：调候（穷通宝鉴）+ 扶抑 + 通关 + 病药，五法择用
 - ✅ **判格局**：八格成败救应，从格 / 专旺 / 化气 / 魁罡等特殊格局核验
@@ -126,7 +126,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 
 **三、多用神冲突有决策树仲裁。** 调候、扶抑、格局、病药各执一词时该听谁的？`references/02` 给了一条五级优先级阶梯（先验从格 → 再急调候 → 扶抑定向 → 格局定点 → 病药校验），把流派之争收敛成一套可执行的取舍顺序。
 
-**四、排盘精度有回归测试兜底。** `tests/test_paipan.py` 共 44 个测试，以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞，再用立春换年柱、节气换月柱、子时流派、大运顺逆、真太阳时、多样输入鲁棒性等边界守住引擎不回退。改动 `paipan.py` 后跑一遍，全绿再用。
+**四、排盘精度有回归测试兜底。** `tests/test_paipan.py` 共 70 个测试，以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派、大运顺逆、真太阳时（含农历叠加）、闰月、输入校验、多样输入鲁棒性等边界守住引擎不回退。改动 `paipan.py` 后跑一遍，全绿再用。
 
 ---
 
@@ -141,26 +141,37 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 节气：立夏（1990-05-06）后第 9 天，下一节气 小满
 
 【四柱】     年柱    月柱    日柱    时柱
-  天干十神   比肩    劫财    日主    伤官
-  天干       庚(金)  辛(金)  庚(金)  癸(水)
-  地支       午(火)  巳(火)  辰(土)  未(土)
-  藏干       丁己    丙戊庚  戊乙癸  己丁乙
-  星运       沐浴    长生    养      冠带
-  旬空       戌亥    申酉    申酉    申酉
+  天干十神   比肩    劫财    日主    伤官  
+  天干       庚(金)    辛(金)    庚(金)    癸(水)
+  地支       午(火)    巳(火)    辰(土)    未(土)
+  藏干       丁己     丙戊庚    戊乙癸    己丁乙  
+  藏干十神   正官/正印   七杀/偏印/比肩   偏印/正财/伤官   正印/正官/正财  
+  星运       沐浴      长生      养       冠带  
+  纳音       路旁土    白蜡金    白蜡金    杨柳木  
+  旬空       戌亥      申酉      申酉      申酉  
 
 【日主】庚金，生于 巳（火） 月令
+【胎元】壬申　【命宫】辛巳　【身宫】己丑
 
 【地支刑冲合会】
   六合：年午·时未→合火/土
   三会：巳午未三会火方(年午·月巳·时未)
 
 【五行个数】木0　火2　土2　金3　水1　｜缺：木
-【五行力量】同党(扶日主)=6.9　异党(耗日主)=5.4　同党占比 56% → 偏强（须结合月令综合判断）
+【五行力量】（天干1 / 藏干本气1·中气0.5·余气0.2 / 月支司令×2）
+  木:0.7  火:3.5  土:3.5  金:3.4  水:1.2
+  同党(扶日主)=6.9  [比劫(金)3.4 + 印(土)3.5]
+  异党(耗日主)=5.4  [食伤(水)1.2 + 财(木)0.7 + 官杀(火)3.5]
+  同党占比 56% → 量化参考：偏强（最终旺衰须结合月令得失·通根透干·刑冲合会综合判断）
 
-【神煞】天乙贵人(时)　月德贵人(年·日)　魁罡(日)　华盖(日)　将星(年)
+【神煞】天乙贵人(时)　天德贵人(月)　月德贵人(年·日)　将星(年)　华盖(日)　魁罡(日)　寡宿(日)
 
-【大运】顺排　7岁起运（1997-08-04）
-  壬午 8-17岁 / 癸未 18-27岁 / 甲申 28-37岁 / 乙酉 38-47岁 / 丙戌 48-57岁 ...
+【大运】顺排　8岁起运（虚岁，1997-08-04）
+  幼运 1-7岁（1990-）
+  壬午　 8-17岁　1997年起　[食神/正官/正印]　星运:沐浴
+  癸未　18-27岁　2007年起　[伤官/正印/正官/正财]　星运:冠带
+  甲申　28-37岁　2017年起　[偏财/比肩/食神/偏印]　星运:临官
+  ……（后续大运与流年略）
 ```
 
 脚本只负责把这些**事实**算准。拿到命盘后，Claude 再按方法论逐层推演旺衰、用神、格局、岁运，给出带依据的断语。
@@ -174,7 +185,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
   <br><sub>点图在线预览完整命书长卷 · 卷首命格诗四句点出命局核心（虚拟生辰演示）</sub>
 </p>
 
-十步推演给完之后，引擎会主动问你一句：要不要把这份命书做成**一页可视化 HTML**，便于保存、回看、分享。你点头才做。
+文字推演（第 0–10 步）给完之后，引擎会主动问你一句：要不要把这份命书做成**一页可视化 HTML**，便于保存、回看、分享。你点头才做。
 
 它把文字推演原样"呈现"成一卷东方雅致的命书长卷，不为排版另造任何结论：
 
@@ -191,7 +202,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 
 想看完整效果，点 **[在线预览](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html)**（raw.githack 实时渲染，无需克隆；在 GitHub 上直接点 `.html` 只会看到源码，这是 GitHub 不渲染网页的限制）。源码见 [`examples/示例-八字命书.html`](./examples/示例-八字命书.html)，方法论与结构模板见 [`references/07_keshihua_baoshu.md`](./references/07_keshihua_baoshu.md)。
 
-> 文字推演是根，可视化只是锦上添花。没有完整的十步推演，不直接出 HTML。
+> 文字推演是根，可视化只是锦上添花。没有完整的第 0–10 步文字推演，不直接出 HTML。
 
 ---
 
@@ -216,10 +227,10 @@ pip3 install -r ~/.claude/skills/bazi-mingli/requirements.txt
 
 ### 3. 在 Claude Code 里用
 
-输入 `/bazi`，然后把生辰丢给它：
+输入 `/bazi-mingli`，然后把生辰丢给它：
 
 ```
-/bazi
+/bazi-mingli
 
 > 帮我看看：1990 年 5 月 15 日下午 2 点半出生，男，出生地广州
 ```
@@ -234,13 +245,13 @@ pip3 install -r ~/.claude/skills/bazi-mingli/requirements.txt
 python3 ~/.claude/skills/bazi-mingli/scripts/paipan.py 1990 5 15 14 30 --gender male --lng 113.3
 ```
 
-常用选项：`--lunar`（按农历）、`--lng <经度>`（真太阳时）、`--years <起始年> <年数>`（流年区间）、`--json`（结构化输出）、`--zi-sect <1|2>`（子时流派）。
+常用选项：`--lunar`（按农历，闰月用负数月表示，如 `-2` = 闰二月）、`--lng <经度>`（真太阳时，范围 -180~180，东经正西经负）、`--tz <时区偏移>`（出生地时区，默认 +8，配合 `--lng` 使用）、`--years <起始年> <年数>`（流年区间，默认从当前干支年按立春分界起 10 年）、`--json`（结构化输出）、`--zi-sect <1|2>`（子时流派）。支持公历 1600-2200 年，起运岁数按虚岁口径。
 
 ---
 
 ## 多 Agent 支持 Works with any agent
 
-技能核心是三块文本加一个脚本，**不绑定任何特定 Agent**：`SKILL.md`（十步方法论指令）+ `scripts/paipan.py`（排盘引擎）+ `references/`（命理知识底座）。任何"能读本地文件 + 能跑 Python"的 AI Agent，都能驱动它排盘推演。
+技能核心是三块文本加一个脚本，**不绑定任何特定 Agent**：`SKILL.md`（十二步方法论指令）+ `scripts/paipan.py`（排盘引擎）+ `references/`（命理知识底座）。任何"能读本地文件 + 能跑 Python"的 AI Agent，都能驱动它排盘推演。
 
 先做通用两步：
 
@@ -255,7 +266,7 @@ pip3 install -r HeiGe-SuanMing/requirements.txt
 第三步，把这段指引接进你的 Agent 规则文件：
 
 ```text
-排八字时严格遵循 HeiGe-SuanMing/SKILL.md 的十步方法论；
+排八字时严格遵循 HeiGe-SuanMing/SKILL.md 的十二步方法论；
 排盘一律调用 HeiGe-SuanMing/scripts/paipan.py，不靠模型手推；
 每条断语必须标注推理依据，孤证不立。
 ```
@@ -316,7 +327,7 @@ pip3 install -r HeiGe-SuanMing/requirements.txt
 
 ```
 HeiGe-SuanMing/
-├── SKILL.md                      # 主提示词：十一步方法论与输出结构（你的 Agent 读这个）
+├── SKILL.md                      # 主提示词：十二步方法论与输出结构（你的 Agent 读这个）
 ├── scripts/
 │   └── paipan.py                 # 精确排盘引擎（基于 lunar_python）
 ├── references/                   # 命理知识底座，推演时按需调用
@@ -371,7 +382,7 @@ HeiGe-SuanMing/
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings → guidance plus personalized health-cultivation and color/attire advice (lifestyle, diet, rest, and what to wear, tuned to the useful god, not folk "supplement what's missing"). Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/test_paipan.py` locks the chart engine with 44 regression tests against classical ground truth plus calendar-boundary edge cases (Lichun, solar terms, midnight conventions, luck-cycle direction, true solar time).
+**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/test_paipan.py` locks the chart engine with 70 regression tests against classical ground truth plus calendar-boundary edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, input validation).
 
 **Optional: a one-page visual report.** Once the reading is done, the engine can (on request) render the whole thing into a single elegant HTML scroll: chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 
@@ -384,7 +395,7 @@ git clone https://github.com/HeiGeAi/HeiGe-SuanMing.git ~/.claude/skills/bazi-mi
 pip3 install -r ~/.claude/skills/bazi-mingli/requirements.txt
 ```
 
-Then type `/bazi` in Claude Code and give it a birth date, time, and gender. For other agents, see the [多 Agent 支持](#多-agent-支持-works-with-any-agent) section above.
+Then type `/bazi-mingli` in Claude Code and give it a birth date, time, and gender. For other agents, see the [多 Agent 支持](#多-agent-支持-works-with-any-agent) section above.
 
 ---
 
