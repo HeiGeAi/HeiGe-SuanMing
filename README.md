@@ -6,7 +6,8 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.5.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.5.0-7c3aed.svg)
+![Engine](https://img.shields.io/badge/engine-1.2.0-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-PolyForm%20NC-64748b.svg)
