@@ -28,7 +28,7 @@ import math
 import sys
 from datetime import datetime, timedelta
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 # 支持的公历年份范围（lunar_python 节气与历表精度有保证的区间）
 YEAR_MIN, YEAR_MAX = 1600, 2200
@@ -163,7 +163,11 @@ def detect_zhi_relations(pillars):
         if len(chars) == 3:
             rel["三合"].append(f"{combo}三合{wx}局({who})")
         elif len(chars) == 2 and combo[1] in chars:
-            rel["半合"].append(f"{combo[:3]}半合{wx}({who})")
+            # 半合只列形成半合的两支，去重重复地支，避免把重复柱误列成三方
+            _seen = set()
+            pair_idxs = [k for k in idxs if not (z[k] in _seen or _seen.add(z[k]))]
+            who2 = "·".join(f"{labels[k]}{z[k]}" for k in pair_idxs)
+            rel["半合"].append(f"{combo[:3]}半合{wx}({who2})")
     # 三会
     for combo, wx in SANHUI.items():
         idxs = [k for k in range(4) if z[k] in combo]
@@ -360,6 +364,108 @@ def liunian_start_year(dt):
 
 
 # ============================================================
+# 流月 / 流日（断语止于月：引擎只出干支事实，每日吉凶留给方法论层，不做）
+# ============================================================
+def _zhi_vs_natal(ext_z, natal_zhis):
+    """一个外来地支与原局四支的合冲害刑（流年/流月/流日引动原局的可计算事实）。"""
+    labels = ["年", "月", "日", "时"]
+    hits = []
+    for i, nz in enumerate(natal_zhis):
+        if ext_z == nz:
+            continue
+        pair = frozenset([ext_z, nz])
+        if pair in ZHI_LIUHE:
+            hits.append(f"合{labels[i]}{nz}")
+        if pair in ZHI_CHONG:
+            hits.append(f"冲{labels[i]}{nz}")
+        if pair in ZHI_HAI:
+            hits.append(f"害{labels[i]}{nz}")
+        if {ext_z, nz} == set("子卯"):
+            hits.append(f"刑{labels[i]}{nz}")
+    return hits
+
+
+def target_date_analysis(y, mo, d, day_gan, natal_zhis, zi_sect=None):
+    """给定公历目标日，输出流年/流月/流日干支、十神、与原局四支的合冲害刑、流日旬空。
+    流月以节气分界、流日与日柱同一套逻辑，与本命排盘口径一致。断语止于月由方法论层把关。"""
+    from lunar_python import Solar
+    ec = Solar.fromYmdHms(y, mo, d, 12, 0, 0).getLunar().getEightChar()
+    if zi_sect:
+        ec.setSect(zi_sect)
+    out = {"date": f"{y}-{mo:02d}-{d:02d}", "liuri_xunkong": ec.getDayXunKong()}
+    for key, gz in (("流年", ec.getYear()), ("流月", ec.getMonth()), ("流日", ec.getDay())):
+        g, z = gz[0], gz[1]
+        out[key] = {"ganzhi": gz, "gan_shen": ten_god(day_gan, g),
+                    "zhi_shen": zhi_ten_gods(day_gan, z), "vs_natal": _zhi_vs_natal(z, natal_zhis)}
+    return out
+
+
+# ============================================================
+# 合婚双盘对照（只出可计算的关系事实，不打分、不下「合/不合」判词）
+# ============================================================
+def _zhi_pair_desc(za, zb):
+    pair = frozenset([za, zb])
+    if za == zb:
+        return f"同为 {za}（同气）"
+    if pair in ZHI_LIUHE:
+        return f"{za}{zb} 六合（合{ZHI_LIUHE[pair]}）"
+    for combo, wx in SANHE.items():
+        if za in combo and zb in combo:
+            return f"{za}{zb} 半合{wx}局"
+    if pair in ZHI_CHONG:
+        return f"{za}{zb} 相冲"
+    if pair in ZHI_HAI:
+        return f"{za}{zb} 相害"
+    if {za, zb} == set("子卯"):
+        return f"{za}{zb} 子卯相刑"
+    return f"{za} / {zb}（无合冲害刑）"
+
+
+def compatibility(ca, cb):
+    """双盘可计算关系事实：日干、夫妻宫(日支)、生肖(年支)、五行缺与个数。
+    只列事实，互补与相处判断由 references/17 方法论推演，引擎不打分、不下合不合判词。"""
+    da_g, da_z = ca["pillars"]["日"][0], ca["pillars"]["日"][1]
+    db_g, db_z = cb["pillars"]["日"][0], cb["pillars"]["日"][1]
+    ya_z, yb_z = ca["pillars"]["年"][1], cb["pillars"]["年"][1]
+    res = {}
+    gpair = frozenset([da_g, db_g])
+    if da_g == db_g:
+        res["日干"] = f"同为 {da_g} 日主（同类，性情相近）"
+    elif gpair in GAN_HE:
+        res["日干"] = f"{da_g}{db_g} 天干五合化{GAN_HE[gpair]}（相吸）"
+    elif gpair in GAN_CHONG:
+        res["日干"] = f"{da_g}{db_g} 天干相冲（个性易相左）"
+    else:
+        res["日干"] = f"{da_g} / {db_g}（无合冲）"
+    res["夫妻宫(日支)"] = _zhi_pair_desc(da_z, db_z)
+    res["生肖(年支)"] = _zhi_pair_desc(ya_z, yb_z)
+    la, lb = ca.get("wuxing_lack", []), cb.get("wuxing_lack", [])
+    res["五行缺"] = f"甲方缺 {('、'.join(la) or '无')}；乙方缺 {('、'.join(lb) or '无')}"
+    _fmt = lambda c: " ".join(f"{k}{v}" for k, v in c.items())
+    res["五行个数"] = f"甲方 {_fmt(ca['wuxing_count'])}；乙方 {_fmt(cb['wuxing_count'])}"
+    return res
+
+
+# ============================================================
+# 中国夏令时（1986-1991 实施，每年约 4-9 月钟表较北京标准时快 1 小时）
+# ============================================================
+_CHINA_DST = {1986: ((5, 4), (9, 14)), 1987: ((4, 12), (9, 13)), 1988: ((4, 10), (9, 11)),
+              1989: ((4, 16), (9, 17)), 1990: ((4, 15), (9, 16)), 1991: ((4, 14), (9, 15))}
+
+
+def china_dst_note(y, mo, d):
+    """出生落在中国 1986-1991 夏令时实施期时，提示核对钟表时间是否已含夏令时。"""
+    win = _CHINA_DST.get(y)
+    if not win:
+        return None
+    (sm, sd), (em, ed) = win
+    if (sm, sd) <= (mo, d) <= (em, ed):
+        return (f"出生于 {y} 年中国夏令时实施期（{sm}/{sd}–{em}/{ed}，钟表较北京标准时快 1 小时）。"
+                f"若所记为当时钟表时间，真实时间应减 1 小时再定时柱，请核对。")
+    return None
+
+
+# ============================================================
 # 主排盘
 # ============================================================
 def build_chart(args):
@@ -380,6 +486,7 @@ def build_chart(args):
     # 公历输入（农历则为转换后的公历），展示用，真太阳时校正不覆盖它
     input_solar_str = f"{y}-{mo:02d}-{d:02d} {h:02d}:{mi:02d}"
     true_solar_str = None
+    dst_note = china_dst_note(y, mo, d)  # 钟表时间口径，故用校正前的输入
 
     # 农历输入先转公历（上方已转），再做真太阳时校正，两者可叠加
     if args.lng is not None:
@@ -389,6 +496,8 @@ def build_chart(args):
         corr_note = f"经度{args.lng}°、时区UTC{args.tz:+.1f} → 真太阳时校正 {delta:+} 分钟"
         if abs(delta) > 120:
             corr_note += "　※ 强提示：校正幅度超过 ±120 分钟，请核对经度与时区（--tz）是否匹配"
+    elif args.tz != 8.0:
+        corr_note = f"已指定时区 UTC{args.tz:+.1f} 但未提供经度（--lng），真太阳时未校正；--tz 需与 --lng 配合方生效。"
 
     solar = Solar.fromYmdHms(y, mo, d, h, mi, 0)
     lunar = solar.getLunar()
@@ -414,6 +523,12 @@ def build_chart(args):
     shensha = compute_shensha(pillars)
     zhi_rel = detect_zhi_relations(pillars)
     gan_rel = detect_gan_relations(pillars)
+
+    natal_zhis = [pillars[i][1] for i in range(4)]
+    target = None
+    if getattr(args, "target_date", None):
+        ty, tm, td_ = args.target_date[0], args.target_date[1], args.target_date[2]
+        target = target_date_analysis(ty, tm, td_, day_gan, natal_zhis, args.zi_sect)
 
     # 节气
     jieqi = None
@@ -465,7 +580,7 @@ def build_chart(args):
             "true_solar": true_solar_str,
             "lunar": lunar.toString(), "shengxiao": SHENGXIAO[pillars[0][1]],
             "xingzuo": solar.getXingZuo(), "gender": "男" if gender_int else "女",
-            "jieqi": jieqi, "correction": corr_note,
+            "jieqi": jieqi, "correction": corr_note, "dst_note": dst_note,
         },
         "pillars": ganzhi, "day_master": f"{day_gan}{GAN_WUXING[day_gan]}",
         "gan_shen": gan_shen, "zhi_canggan": {k: ZHI_CANGGAN[pillars[i][1]] for i, k in enumerate(keys)},
@@ -478,6 +593,7 @@ def build_chart(args):
         "yun_direction": "顺排" if forward else "逆排",
         "start_age": start_age_xu, "start_solar": yun.getStartSolar().toYmd(),
         "dayun": dayun_list, "liunian": liunian,
+        "target_date": target,
     }
 
 
@@ -498,6 +614,8 @@ def render_text(c):
         P(f"节气：{inp['jieqi']}")
     if inp["correction"]:
         P(f"校正：{inp['correction']}")
+    if inp.get("dst_note"):
+        P(f"夏令时：{inp['dst_note']}")
     P("")
     P("【四柱】     " + "    ".join(f"{k}柱" for k in cols))
     P("  天干十神   " + "  ".join(f"{c['gan_shen'][k]:<4}" for k in cols))
@@ -545,6 +663,23 @@ def render_text(c):
     P(f"【流年】{c['liunian'][0]['year']}-{c['liunian'][-1]['year']}")
     for ln in c["liunian"]:
         P(f"  {ln['year']}（虚{ln['age']}岁）{ln['ganzhi']}　[{ln['gan_shen']}/{'/'.join(ln['zhi_shen'])}]")
+    if c.get("target_date"):
+        td = c["target_date"]
+        P("")
+        P(f"【指定日推演】{td['date']}（断语止于月，流日仅列干支事实）")
+        for key in ("流年", "流月", "流日"):
+            t = td[key]
+            vs = ("　引动：" + "，".join(t["vs_natal"])) if t["vs_natal"] else ""
+            P(f"  {key} {t['ganzhi']}　[{t['gan_shen']}/{'/'.join(t['zhi_shen'])}]{vs}")
+        P(f"  流日旬空：{td['liuri_xunkong']}")
+    if c.get("compatibility"):
+        P("")
+        P("【合婚双盘对照】（关系事实，不打分、不下合不合判词，判断见 references/17）")
+        if c.get("partner_pillars"):
+            pp = c["partner_pillars"]
+            P("  乙方四柱：" + "  ".join(pp[k] for k in ["年", "月", "日", "时"]))
+        for k, v in c["compatibility"].items():
+            P(f"  {k}：{v}")
     P("══════════════════════════════════════════════════")
     P(f"排盘引擎 v{c['version']}　仅供传统文化研究与自我认知参考")
     return "\n".join(out)
@@ -567,6 +702,19 @@ def validate_args(args):
         sys.exit(f"经度超出范围：--lng 须在 -180 ~ 180 之间（东经为正、西经为负），收到 {args.lng}。")
     if args.years and not (YEAR_MIN <= args.years[0] and args.years[0] + args.years[1] - 1 <= YEAR_MAX):
         sys.exit(f"流年区间超出支持范围：--years 须落在公历 {YEAR_MIN}-{YEAR_MAX} 年内。")
+    if getattr(args, "partner", None) is not None:
+        if not (4 <= len(args.partner) <= 5):
+            sys.exit("--partner 需 年 月 日 时 [分]，如 --partner 1992 8 15 10 0")
+        if not (YEAR_MIN <= args.partner[0] <= YEAR_MAX):
+            sys.exit(f"合婚第二人年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年。")
+    if getattr(args, "target_date", None) is not None:
+        ty, tm, tdd = args.target_date
+        if not (YEAR_MIN <= ty <= YEAR_MAX):
+            sys.exit(f"--target-date 年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年。")
+        try:
+            datetime(ty, tm, tdd)
+        except ValueError as e:
+            sys.exit(f"--target-date 日期非法：{e}")
 
     if args.lunar:
         if not (1 <= args.month <= 12 or -12 <= args.month <= -1):
@@ -609,12 +757,26 @@ def main():
                     help="子时流派：1=晚子(23点)换日，2=不换日；不传用库默认")
     ap.add_argument("--years", type=_span_int, nargs=2, metavar=("START", "SPAN"),
                     help="流年起始年与年数(均须≥1)，如 --years 2024 12")
+    ap.add_argument("--target-date", type=int, nargs=3, metavar=("Y", "M", "D"),
+                    help="指定公历日，输出其流年/流月/流日干支与对原局的引动（断语止于月）")
+    ap.add_argument("--partner", type=int, nargs="+", metavar="Y M D H [Mi]",
+                    help="合婚第二人公历生辰(年 月 日 时 [分])，与主盘做双盘对照（不打分）")
+    ap.add_argument("--partner-gender", choices=["male", "female"], default=None,
+                    help="合婚第二人性别（不传则同主盘）")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"bazi paipan v{__version__}")
     args = ap.parse_args()
 
     validate_args(args)
     chart = build_chart(args)
+    if args.partner:
+        pv = list(args.partner) + [0] * (5 - len(args.partner))
+        pargs = argparse.Namespace(year=pv[0], month=pv[1], day=pv[2], hour=pv[3], minute=pv[4],
+                                   gender=args.partner_gender or args.gender, lunar=args.lunar,
+                                   lng=None, tz=8.0, zi_sect=args.zi_sect, years=None, target_date=None)
+        partner_chart = build_chart(pargs)
+        chart["compatibility"] = compatibility(chart, partner_chart)
+        chart["partner_pillars"] = partner_chart["pillars"]
     if args.json:
         print(json.dumps(chart, ensure_ascii=False, indent=2))
     else:

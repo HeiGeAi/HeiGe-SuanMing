@@ -635,5 +635,194 @@ class TestIntegrationRobustness(unittest.TestCase):
                                  f"{name}: JSON 回读四柱不一致")
 
 
+# ============================================================
+# v1.3.0 新增：流月流日 / 合婚 / 夏令时 / 半合去重 / 子时钉死 / 校验补强
+# ============================================================
+class TestLiuYueLiuRi(unittest.TestCase):
+    """流月流日数据层（断语止于月，引擎只出干支事实）。"""
+
+    def test_liunian_matches_engine(self):
+        td = paipan.target_date_analysis(2027, 3, 15, "丁", ["午", "巳", "辰", "未"])
+        self.assertEqual(td["流年"]["ganzhi"], paipan.liunian_ganzhi(2027))
+
+    def test_liuri_matches_day_pillar(self):
+        c = paipan.build_chart(make_args(2027, 3, 15, 12, 0))
+        natal = [c["pillars"][k][1] for k in ["年", "月", "日", "时"]]
+        td = paipan.target_date_analysis(2027, 3, 15, c["pillars"]["日"][0], natal)
+        self.assertEqual(td["流日"]["ganzhi"], c["pillars"]["日"])
+
+    def test_liuyue_by_jieqi_not_lunar_month(self):
+        before = paipan.target_date_analysis(2027, 3, 4, "丁", ["午"])
+        after = paipan.target_date_analysis(2027, 3, 6, "丁", ["午"])
+        self.assertEqual(before["流月"]["ganzhi"], "壬寅")
+        self.assertEqual(after["流月"]["ganzhi"], "癸卯")
+
+    def test_ten_god_vs_daymaster(self):
+        td = paipan.target_date_analysis(2027, 3, 15, "丁", ["午"])
+        gz = td["流年"]["ganzhi"]
+        self.assertEqual(td["流年"]["gan_shen"], paipan.ten_god("丁", gz[0]))
+
+    def test_vs_natal_chong(self):
+        hits = paipan._zhi_vs_natal("子", ["午", "辰", "寅", "申"])
+        self.assertIn("冲年午", hits)
+
+
+class TestHeHun(unittest.TestCase):
+    """合婚双盘对照：只出关系事实，不打分、不下合不合判词。"""
+
+    def setUp(self):
+        self.a = paipan.build_chart(make_args(1990, 5, 15, 14, 30, "male"))
+        self.b = paipan.build_chart(make_args(1992, 8, 15, 10, 0, "female"))
+
+    def test_keys_present(self):
+        r = paipan.compatibility(self.a, self.b)
+        for k in ("日干", "夫妻宫(日支)", "生肖(年支)", "五行缺", "五行个数"):
+            self.assertIn(k, r)
+
+    def test_no_score_no_verdict(self):
+        r = paipan.compatibility(self.a, self.b)
+        for v in r.values():
+            for bad in ("不合", "打分", "评分", "合婚煞"):
+                self.assertNotIn(bad, v)
+
+    def test_self_pair_baseline(self):
+        r = paipan.compatibility(self.a, self.a)
+        self.assertIn("同为", r["日干"])
+        self.assertNotIn("相冲", r["夫妻宫(日支)"])
+
+    def test_zhi_pair_relation_symmetric(self):
+        self.assertIn("六合", paipan._zhi_pair_desc("子", "丑"))
+        self.assertIn("六合", paipan._zhi_pair_desc("丑", "子"))
+        self.assertIn("相冲", paipan._zhi_pair_desc("子", "午"))
+        self.assertIn("相冲", paipan._zhi_pair_desc("午", "子"))
+
+    def test_cli_partner_year_range(self):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "paipan.py")
+        r = subprocess.run([sys.executable, script, "1990", "5", "15", "14", "30",
+                            "--gender", "male", "--partner", "1500", "8", "15", "10", "0",
+                            "--partner-gender", "female"], capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("年份超出支持范围", r.stdout + r.stderr)
+
+
+class TestBanHeDedup(unittest.TestCase):
+    """ENG-1 回归：半合遇重复地支不把重复柱误列成三方。"""
+
+    def test_duplicate_branch_not_three_pillars(self):
+        r = paipan.detect_zhi_relations([("庚", "申"), ("甲", "子"), ("丙", "子"), ("戊", "寅")])
+        self.assertIn("半合", r)
+        entry = r["半合"][0]
+        inner = entry[entry.index("(") + 1:entry.index(")")]
+        self.assertEqual(len(inner.split("·")), 2, f"半合应只列两支，实为 {entry}")
+        self.assertNotIn("日子", entry)
+
+
+class TestZiShiPin(unittest.TestCase):
+    """ENG-3：子时时干按流派钉死，防 lunar_python 升级或流派改动悄改。"""
+
+    def test_zi_sect_1_late_advances_day(self):
+        c = paipan.build_chart(make_args(2000, 6, 1, 23, 30, zi_sect=1))
+        self.assertEqual(c["pillars"]["日"], "辛卯")
+        self.assertEqual(c["pillars"]["时"], "戊子")
+
+    def test_zi_sect_2_no_advance(self):
+        c = paipan.build_chart(make_args(2000, 6, 1, 23, 30, zi_sect=2))
+        self.assertEqual(c["pillars"]["日"], "庚寅")
+        self.assertEqual(c["pillars"]["时"], "戊子")
+
+
+class TestDstNote(unittest.TestCase):
+    """TST-4：中国 1986-1991 夏令时核时提示。"""
+
+    def test_in_window(self):
+        n = paipan.china_dst_note(1988, 7, 1)
+        self.assertIsNotNone(n)
+        self.assertIn("夏令时", n)
+
+    def test_window_start_boundary(self):
+        self.assertIsNotNone(paipan.china_dst_note(1988, 4, 10))
+
+    def test_out_of_window_month(self):
+        self.assertIsNone(paipan.china_dst_note(1988, 2, 1))
+
+    def test_non_dst_year(self):
+        self.assertIsNone(paipan.china_dst_note(1995, 7, 1))
+
+
+class TestCliMore(unittest.TestCase):
+    """TST-5：输入校验补强（子进程跑 CLI）。"""
+
+    def _run(self, *extra):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "paipan.py")
+        return subprocess.run([sys.executable, script, *extra], capture_output=True, text=True)
+
+    def test_hour_out_of_range(self):
+        r = self._run("1990", "5", "15", "24", "30", "--gender", "male")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("时0-23", r.stdout + r.stderr)
+
+    def test_solar_invalid_date(self):
+        r = self._run("1990", "2", "30", "14", "30", "--gender", "male")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("日期非法", r.stdout + r.stderr)
+
+    def test_target_date_invalid(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--target-date", "2027", "2", "30")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("日期非法", r.stdout + r.stderr)
+
+    def test_tz_without_lng_note(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male", "--tz", "9")
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("--tz 需与 --lng 配合", r.stdout)
+
+
+class TestShenShaMore(unittest.TestCase):
+    """TST-6：补神煞分支测试（古法起例为真值）。"""
+
+    def test_yuede_wu_month(self):
+        r = paipan.compute_shensha([("丙", "午"), ("甲", "午"), ("庚", "子"), ("戊", "寅")])
+        self.assertEqual(r.get("月德贵人"), ["年"])
+
+    def test_jiangxing_yima_huagai_sanhe(self):
+        r = paipan.compute_shensha([("庚", "申"), ("甲", "子"), ("丙", "辰"), ("戊", "寅")])
+        self.assertIn("将星", r)
+        self.assertIn("驿马", r)
+        self.assertIn("华盖", r)
+
+    def test_wenchang_lushen(self):
+        r = paipan.compute_shensha([("壬", "子"), ("丙", "午"), ("甲", "巳"), ("丙", "寅")])
+        self.assertIn("文昌贵人", r)
+        self.assertIn("禄神", r)
+
+
+class TestYearBoundary(unittest.TestCase):
+    """TST-7：年份边界端点与越界。"""
+
+    def test_min_max_year_ok(self):
+        for y in (1600, 2200):
+            c = paipan.build_chart(make_args(y, 6, 15, 12, 0))
+            self.assertEqual(len(c["pillars"]), 4)
+            self.assertTrue(all(c["pillars"][k] for k in ["年", "月", "日", "时"]))
+
+    def test_cli_above_max(self):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "paipan.py")
+        r = subprocess.run([sys.executable, script, "2201", "5", "15", "14", "30",
+                            "--gender", "male"], capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("年份超出支持范围", r.stdout + r.stderr)
+
+    def test_cli_min_endpoint_ok(self):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "paipan.py")
+        r = subprocess.run([sys.executable, script, "1600", "6", "15", "12", "0",
+                            "--gender", "male"], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
