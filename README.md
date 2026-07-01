@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.6.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.7.0-7c3aed.svg)
 ![Engine](https://img.shields.io/badge/engine-1.3.0-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
@@ -24,7 +24,7 @@
 
 ## 这是什么 What is this
 
-HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文件 + 能调 Python"的 AI Agent 里（推荐 Claude Code + Claude Opus 4.8）。它把算命这件事拆成两层：
+HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**梅花易数占卜**作为第二引擎（占一时一事），能跑在任何"会读文件 + 能调 Python"的 AI Agent 里（推荐 Claude Code + Claude Opus 4.8）。八字部分把算命拆成两层：
 
 **第一层：排盘用脚本算，绝不靠模型手推。**
 `scripts/paipan.py` 基于 `lunar_python` 做精确干支推算，自动处理三件最容易错的事：以**立春**定年柱（不是正月初一）、以**节气**定月柱（不是农历月）、按**真太阳时**校正时柱。再往上算齐藏干、十神、纳音、长生十二宫、旬空、胎元命宫身宫、地支刑冲合会、五行力量加权、神煞、大运流年。
@@ -47,6 +47,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 - ✅ **色彩服饰**：用神色落到衣着、首饰、配饰、随身物、居家办公，以颜色为主轴、宝石按色参考，审美优先、不承诺转运
 - ✅ **合婚合参**：双盘对照夫妻星宫、用神互补、日柱年支合冲、大运同步，只断相处模式与磨合点，不打分、不下「合 / 不合」判词
 - ✅ **可视化命书**：推演完成后可一键生成一页东方雅致的 HTML 命书，便于保存、回看、分享（断语与文字版逐字一致，先征询再生成）
+- ✅ **梅花易数占卜（第二引擎）**：时间 / 数字 / 物象起卦，脚本算准本卦互卦变卦与体用定位，按体用生克断一件事的顺逆与过程，占卜非命理、一事一占、趋势化不打分
 
 ### 适合谁
 
@@ -114,8 +115,9 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 | `15_yangsheng_tiaoyang.md` | 五行养生调养：把用神喜忌、缺失、过旺、寒暖燥湿，翻译成针对性的作息、饮食、情志、运动建议（认准用神，缺啥补啥是误区，参考非医嘱） |
 | `16_secai_fushi.md` | 色彩服饰调候：把用神喜忌、寒暖燥湿，翻译成针对性的衣着、首饰、配饰、随身物、居家办公色彩与材质（认用神色，缺啥穿啥是误区；颜色为主轴、宝石按色参考不神化，参考非转运） |
 | `17_hehun.md` | 正派合婚双盘合参：双方婚姻象 + 用神互补 + 日柱年支合冲 + 大运同步，只断相处模式与磨合点（禁打分、禁「合 / 不合」判词；属相相冲一票否决、合婚煞法等旧法不取） |
+| `18_meihua_yishu.md` | 梅花易数占卜引擎（第二引擎，非命理）：起卦法、先天八卦数、体用生克断事、互变卦、卦气应期、八卦万物类象、《梅花易数》源流（占卜非命理、一事一占、不打分，配 `scripts/meihua.py`） |
 
-其中 `00` 是概念检索入口，`01-07` 是推演主干，`08-14` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典，《滴天髓》《子平真诠》两大主干更各有专篇（`13`、`14`）；`15`、`16` 是第 9 步的调养落地篇，把用神喜忌翻译成作息饮食情志（`15`）与色彩服饰（`16`）建议，`17` 是正派合婚双盘合参篇。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
+其中 `00` 是概念检索入口，`01-07` 是推演主干，`08-14` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典，《滴天髓》《子平真诠》两大主干更各有专篇（`13`、`14`）；`15`、`16` 是第 9 步的调养落地篇，把用神喜忌翻译成作息饮食情志（`15`）与色彩服饰（`16`）建议，`17` 是正派合婚双盘合参篇，`18` 是梅花易数占卜引擎（第二引擎，占一时一事，与八字命理分属两门）。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
 
 ---
 
@@ -129,7 +131,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，能跑在任何"会读文
 
 **三、多用神冲突有决策树仲裁。** 调候、扶抑、格局、病药各执一词时该听谁的？`references/02` 给了一条五级优先级阶梯（先验从格 → 再急调候 → 扶抑定向 → 格局定点 → 病药校验），把流派之争收敛成一套可执行的取舍顺序。
 
-**四、排盘精度有回归测试兜底。** `tests/test_paipan.py` 共 97 个测试，以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派（两派时干钉死）、大运顺逆、真太阳时（含农历叠加）、闰月、流月流日节气换月、合婚双盘对照、夏令时核时、年份边界、输入校验、多样输入鲁棒性等边界守住引擎不回退。改动 `paipan.py` 后跑一遍，全绿再用。
+**四、排盘精度有回归测试兜底。** `tests/` 共 119 个测试（八字 97 + 梅花 22）。八字以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派（两派时干钉死）、大运顺逆、真太阳时（含农历叠加）、闰月、流月流日节气换月、合婚双盘对照、夏令时核时、年份边界、输入校验等边界；梅花以《梅花易数》「观梅占」黄金例校验起卦全链路（先天数取卦、互卦、变卦、体用生克）。改动脚本后跑 `python3 -m unittest discover -s tests`，全绿再用。
 
 ---
 
@@ -332,7 +334,8 @@ pip3 install -r HeiGe-SuanMing/requirements.txt
 HeiGe-SuanMing/
 ├── SKILL.md                      # 主提示词：十二步方法论与输出结构（你的 Agent 读这个）
 ├── scripts/
-│   └── paipan.py                 # 精确排盘引擎（基于 lunar_python）
+│   ├── paipan.py                 # 八字精确排盘引擎（基于 lunar_python）
+│   └── meihua.py                 # 梅花易数起卦引擎（先天八卦数+互变+体用）
 ├── references/                   # 命理知识底座，推演时按需调用
 │   ├── 00_gainian_suoyin.md      # 命理概念 → 篇目检索索引（先看这里再按需深读）
 │   ├── 01_paipan_jichu.md
@@ -351,14 +354,16 @@ HeiGe-SuanMing/
 │   ├── 14_ziping_zhenquan.md     # 子平真诠：月令顺逆、相神、成败救应、格局高低
 │   ├── 15_yangsheng_tiaoyang.md  # 五行养生调养：用神喜忌落到作息饮食情志运动
 │   ├── 16_secai_fushi.md         # 色彩服饰调候：用神色落到衣着首饰随身环境
-│   └── 17_hehun.md               # 正派合婚双盘合参：用神互补+日柱年支合冲，不打分
+│   ├── 17_hehun.md               # 正派合婚双盘合参：用神互补+日柱年支合冲，不打分
+│   └── 18_meihua_yishu.md        # 梅花易数占卜引擎：起卦+体用+互变，占一时一事
 ├── cases/                        # 完整推演范例，照着学怎么把方法落到真盘
 │   ├── 01_shenqiang_caiguan.md   # 身强用财官
 │   ├── 02_shenruo_yinbi.md       # 身弱用印比
 │   ├── 03_tiaohou.md             # 调候为急
 │   └── 04_conge.md               # 从格顺势
 ├── tests/
-│   └── test_paipan.py            # 排盘引擎回归测试（古法定式为基准）
+│   ├── test_paipan.py            # 八字排盘回归测试（古法定式为基准）
+│   └── test_meihua.py            # 梅花起卦回归测试（观梅占黄金例）
 ├── examples/
 │   └── 示例-八字命书.html         # 可视化命书样例（虚拟生辰，脱敏教学向）
 ├── assets/
@@ -380,13 +385,13 @@ HeiGe-SuanMing/
 
 ## English
 
-**HeiGe-SuanMing** is a Bazi (Four Pillars of Destiny) engine that runs inside any AI agent able to read local files and run Python (Claude Code + Claude Opus 4.8 recommended). It splits fortune-telling into two layers so the whole thing stays reproducible and auditable.
+**HeiGe-SuanMing** is a Bazi (Four Pillars of Destiny) engine that runs inside any AI agent able to read local files and run Python (Claude Code + Claude Opus 4.8 recommended). It splits fortune-telling into two layers so the whole thing stays reproducible and auditable. It also ships a second engine — **Meihua Yishu (Plum Blossom I-Ching divination)** — for casting a hexagram on one specific question (a divination engine, distinct from Bazi life-reading).
 
 **Layer 1 — the chart is computed, never hand-derived.** `scripts/paipan.py` uses `lunar_python` for precise stem-branch calculation, automatically handling the three things people get wrong most often: setting the year pillar by **Lichun** (start of spring, not lunar new year), the month pillar by **solar terms** (not the lunar month), and the hour pillar by **true solar time**. On top of that it computes hidden stems, ten gods, nayin, the twelve life stages, void branches, branch interactions (combinations / clashes / punishments), weighted five-element strength, symbolic stars, and the luck/annual pillars.
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings → guidance plus personalized health-cultivation and color/attire advice (lifestyle, diet, rest, and what to wear, tuned to the useful god, not folk "supplement what's missing"). Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/test_paipan.py` locks the chart engine with 97 regression tests against classical ground truth plus calendar-boundary edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation).
+**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/` locks both engines with 119 regression tests (Bazi 97 + Meihua 22) against classical ground truth plus edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation, and the classic Guanmei hexagram casting).
 
 **Optional: a one-page visual report.** Once the reading is done, the engine can (on request) render the whole thing into a single elegant HTML scroll: chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 
