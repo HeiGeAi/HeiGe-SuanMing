@@ -12,9 +12,9 @@
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-PolyForm%20NC-64748b.svg)
 
-**黑哥算命 · 四柱八字精确排盘与系统推演 | A Bazi engine that computes first, then reasons**
+**黑哥算命 · 八字命理排盘推演 + 梅花易数占卜 | A Bazi & Meihua (I-Ching) divination engine that computes first, then reasons**
 
-像做技术分析一样算命：排盘交给脚本算准，推演按固定方法论逐层展开，每个结论都标注依据。
+像做技术分析一样算命：排盘起卦交给脚本算准，推演按固定方法论逐层展开，每个结论都标注依据。
 
 [这是什么](#这是什么-what-is-this) • [为什么不一样](#为什么不一样-why-its-different) • [核心方法论](#核心方法论-methodology) • [知识底座](#知识底座-knowledge-base) • [命盘样例](#命盘样例-sample) • [可视化命书](#可视化命书-visual-report) • [快速开始](#快速开始-quick-start) • [多 Agent 支持](#多-agent-支持-works-with-any-agent) • [免责声明](#免责声明-disclaimer)
 
