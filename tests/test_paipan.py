@@ -824,5 +824,123 @@ class TestYearBoundary(unittest.TestCase):
         self.assertEqual(r.returncode, 0)
 
 
+# ============================================================
+# v1.3.1 审计修复回归（partner 校验/历法开关、刑口径、DST 边界、交节提示）
+# ============================================================
+class TestPartnerValidation(unittest.TestCase):
+    """B1/B2/B3：合婚第二人输入校验与独立历法开关。"""
+
+    def _run(self, *extra):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "paipan.py")
+        return subprocess.run([sys.executable, script, *extra], capture_output=True, text=True)
+
+    def test_partner_invalid_solar_date(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner", "1992", "2", "30", "10")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("合婚第二人日期非法", r.stdout + r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+
+    def test_partner_invalid_month(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner", "1990", "13", "40", "10")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn("Traceback", r.stderr)
+
+    def test_partner_hour_range(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner", "1992", "8", "15", "25")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("时0-23", r.stdout + r.stderr)
+
+    def test_partner_defaults_solar_even_if_main_lunar(self):
+        # B2：主盘农历时，乙方默认仍按公历解释（1992-08-15 公历日柱癸亥）
+        r = self._run("1990", "4", "21", "14", "30", "--gender", "male", "--lunar",
+                      "--partner", "1992", "8", "15", "10")
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("癸亥", r.stdout)
+        self.assertIn("公历输入", r.stdout)
+
+    def test_partner_lunar_flag(self):
+        # --partner-lunar 时乙方按农历解释（农历 1992-08-15 = 公历 1992-09-11，日柱庚寅）
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner", "1992", "8", "15", "10", "--partner-lunar")
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("农历输入", r.stdout)
+
+    def test_partner_dst_note_passthrough(self):
+        # B8：乙方生于夏令时期须提示
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner", "1988", "7", "1", "10")
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("乙方夏令时", r.stdout)
+
+
+class TestZhiPairDescV131(unittest.TestCase):
+    """B4/B5：合婚地支关系口径与原局引擎对齐。"""
+
+    def test_banhe_requires_zhongshen(self):
+        self.assertIn("拱", paipan._zhi_pair_desc("申", "辰"))
+        self.assertNotIn("半合", paipan._zhi_pair_desc("申", "辰"))
+        self.assertIn("半合", paipan._zhi_pair_desc("申", "子"))
+
+    def test_xing_pairs(self):
+        self.assertIn("相刑", paipan._zhi_pair_desc("丑", "戌"))
+        self.assertIn("相刑", paipan._zhi_pair_desc("戌", "未"))
+        self.assertIn("相刑兼相害", paipan._zhi_pair_desc("寅", "巳"))
+
+    def test_self_xing(self):
+        self.assertIn("自刑", paipan._zhi_pair_desc("午", "午"))
+        self.assertNotIn("自刑", paipan._zhi_pair_desc("子", "子"))
+
+
+class TestVsNatalXingV131(unittest.TestCase):
+    """B6：流年流月流日对原局的刑与自刑不漏报。"""
+
+    def test_xing_reported(self):
+        hits = paipan._zhi_vs_natal("戌", ["丑", "巳", "丑", "巳"])
+        self.assertIn("刑年丑", hits)
+        self.assertIn("刑日丑", hits)
+
+    def test_self_xing_reported(self):
+        hits = paipan._zhi_vs_natal("午", ["午", "戌", "寅", "子"])
+        self.assertIn("自刑年午", hits)
+
+    def test_non_zixing_equal_skipped(self):
+        hits = paipan._zhi_vs_natal("子", ["子", "戌", "寅", "申"])
+        self.assertFalse(any("自刑" in h for h in hits))
+
+
+class TestDstBoundaryV131(unittest.TestCase):
+    """B10：夏令时起止边界日按凌晨 2 时切换提示。"""
+
+    def test_start_day_wording(self):
+        n = paipan.china_dst_note(1986, 5, 4)
+        self.assertIn("开始日", n)
+        self.assertIn("2 时", n)
+
+    def test_end_day_wording(self):
+        n = paipan.china_dst_note(1986, 9, 14)
+        self.assertIn("结束日", n)
+        self.assertIn("回拨", n)
+
+    def test_mid_window_wording(self):
+        n = paipan.china_dst_note(1988, 7, 1)
+        self.assertIn("实施期", n)
+
+
+class TestTargetDateBoundaryV131(unittest.TestCase):
+    """B7：交节/立春当日输出边界提示。"""
+
+    def test_lichun_day_has_note(self):
+        td = paipan.target_date_analysis(2024, 2, 4, "丁", ["午"])
+        self.assertIn("边界提示", td)
+
+    def test_normal_day_no_note(self):
+        td = paipan.target_date_analysis(2024, 2, 20, "丁", ["午"])
+        self.assertNotIn("边界提示", td)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

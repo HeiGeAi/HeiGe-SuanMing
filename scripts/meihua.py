@@ -13,16 +13,24 @@ License: PolyForm Noncommercial 1.0.0（完整条款见仓库根 LICENSE）
 
 用法：
   python3 meihua.py --time 2020 3 15 14 30            # 时间起卦（公历，脚本转农历取数）
-  python3 meihua.py --time 2020 3 15 14 30 --lunar    # 按农历年月日时输入
-  python3 meihua.py --numbers 34 43                   # 数字起卦（上数 下数）
+  python3 meihua.py --time 2020 3 15 14 30 --lunar    # 按农历年月日时输入（闰月用负数月）
+  python3 meihua.py --time 2020 3 15 23 30 --zi-sect 1  # 晚子时归次日口径（默认 2=不换日）
+  python3 meihua.py --numbers 34 43                   # 数字起卦（上数 下数，须≥1）
   python3 meihua.py --gua 2 3 1                        # 直接给 上卦数 下卦数 动爻
-  python3 meihua.py --numbers 34 43 --query "问近期求职"
+  python3 meihua.py --numbers 34 43 --query "问近期求职" --json   # JSON 输出
 """
 
 import argparse
+import os
 import sys
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+# 五行表与年份闸门统一从 paipan 引入，避免两处定义漂移（paipan 为原始核心引擎，零本地依赖）
+from paipan import ZHI, WUXING_SHENG, WUXING_KE, YEAR_MIN, YEAR_MAX  # noqa: E402
 
 # 先天八卦数：乾1 兑2 离3 震4 巽5 坎6 艮7 坤8
 XIANTIAN = {1: "乾", 2: "兑", 3: "离", 4: "震", 5: "巽", 6: "坎", 7: "艮", 8: "坤"}
@@ -46,10 +54,6 @@ TRIGRAM_LEI = {
     "艮": "山·少男·手·止·门阙·稳",
     "坤": "地·母·腹·众·柔顺·田土·吝啬",
 }
-WUXING_SHENG = {"木": "火", "火": "土", "土": "金", "金": "水", "水": "木"}
-WUXING_KE = {"木": "土", "土": "水", "水": "火", "火": "金", "金": "木"}
-ZHI = "子丑寅卯辰巳午未申酉戌亥"
-
 # 六十四卦名，键 (上卦, 下卦)
 _G = "乾兑离震巽坎艮坤"
 GUA64 = {
@@ -173,7 +177,9 @@ def _duan_hint(rel_yong, rel_bian):
 
 
 def qigua_by_numbers(a, b):
-    """数字起卦：上数 a、下数 b。上卦=a%8，下卦=b%8，动爻=(a+b)%6。"""
+    """数字起卦：上数 a、下数 b。上卦=a%8，下卦=b%8，动爻=(a+b)%6。数须为 ≥1 的计数。"""
+    if a < 1 or b < 1:
+        raise ValueError("数字起卦须为 ≥1 的整数（数是计数：声音数、字数、物数）")
     return build_gua(_mod(a, 8), _mod(b, 8), _mod(a + b, 6))
 
 
@@ -184,13 +190,54 @@ def qigua_by_time_numbers(year_zhi_idx, month, day, hour_zhi_idx):
     return build_gua(_mod(s, 8), _mod(s + hour_zhi_idx, 8), _mod(s + hour_zhi_idx, 6))
 
 
-def qigua_by_time(y, mo, d, h, mi, lunar=False):
-    """公历(默认)或农历时间起卦，用 lunar_python 取农历年支序/月/日/时支序。"""
+def _validate_time_input(y, mo, d, h, mi, lunar):
+    """时间起卦前置校验：与 paipan.py 同风格的中文报错，不把上游裸异常漏给用户。"""
+    if not (YEAR_MIN <= y <= YEAR_MAX):
+        sys.exit(f"年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {y}。")
+    if not (0 <= h <= 23 and 0 <= mi <= 59):
+        sys.exit("输入有误：时0-23、分0-59。")
+    if lunar:
+        if not (1 <= mo <= 12 or -12 <= mo <= -1):
+            sys.exit("农历月须为 1-12，闰月用对应负数表示（如 -2=闰二月）。")
+        if not (1 <= d <= 30):
+            sys.exit("农历日须为 1-30。")
+    else:
+        from datetime import datetime
+        try:
+            datetime(y, mo, d, h, mi)
+        except ValueError as e:
+            sys.exit(f"日期非法：{e}")
+
+
+def qigua_by_time(y, mo, d, h, mi, lunar=False, zi_sect=2):
+    """公历(默认)或农历时间起卦，用 lunar_python 取农历年支序/月/日/时支序。
+    zi_sect：晚子时（23 点后）取日口径，1=归次日、2=不换日（默认，主流梅花口径之一，起卦前声明即可）。"""
     try:
         from lunar_python import Solar, Lunar
     except ImportError:
         sys.exit("缺少依赖 lunar_python，请先运行：pip3 install lunar_python")
-    lun = Lunar.fromYmdHms(y, mo, d, h, mi, 0) if lunar else Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar()
+    _validate_time_input(y, mo, d, h, mi, lunar)
+    try:
+        if lunar:
+            lun = Lunar.fromYmdHms(y, mo, d, h, mi, 0)
+        else:
+            if zi_sect == 1 and h == 23:
+                # 晚子归次日：日数取次日农历日（时支仍为子）
+                from datetime import datetime, timedelta
+                nd = datetime(y, mo, d, h, mi) + timedelta(hours=1)
+                lun = Solar.fromYmdHms(nd.year, nd.month, nd.day, 23, mi, 0).getLunar()
+                lun_next = Solar.fromYmdHms(nd.year, nd.month, nd.day, 12, 0, 0).getLunar()
+                year_idx = ZHI.index(lun_next.getYearZhi()) + 1
+                month = abs(lun_next.getMonth())
+                day = lun_next.getDay()
+                hour_idx = 1  # 子
+                res = qigua_by_time_numbers(year_idx, month, day, hour_idx)
+                res["起卦法"] = (f"时间起卦（晚子归次日）：农历{lun_next.getYearInGanZhi()}年 {month}月 {day}日 子时"
+                                f"（年支{year_idx}+月{month}+日{day}+时支{hour_idx}）")
+                return res
+            lun = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar()
+    except Exception as e:
+        sys.exit(f"时间起卦失败（请核对日期是否存在，农历留意小月）：{e}")
     year_idx = ZHI.index(lun.getYearZhi()) + 1     # 子1..亥12
     month = abs(lun.getMonth())                     # 农历月（闰月取绝对值）
     day = lun.getDay()
@@ -241,7 +288,10 @@ def main():
                    help="数字起卦：上数 下数")
     g.add_argument("--gua", type=int, nargs=3, metavar=("上卦数", "下卦数", "动爻"),
                    help="直接指定：上卦数(1-8) 下卦数(1-8) 动爻(1-6)")
-    ap.add_argument("--lunar", action="store_true", help="--time 按农历输入")
+    ap.add_argument("--lunar", action="store_true",
+                    help="--time 按农历输入（闰月用负数月，如 -2=闰二月；闰月与本月取数相同）")
+    ap.add_argument("--zi-sect", type=int, choices=[1, 2], default=2,
+                    help="晚子时(23点后)取日口径：1=归次日、2=不换日(默认)；23点起卦时声明所用口径")
     ap.add_argument("--query", type=str, default=None, help="所占之事（一事一占）")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"meihua v{__version__}")
@@ -249,16 +299,18 @@ def main():
 
     try:
         if args.time:
-            t = list(args.time) + [0] * (5 - len(args.time))
             if not (4 <= len(args.time) <= 5):
                 sys.exit("--time 需 年 月 日 时 [分]")
-            chart = qigua_by_time(t[0], t[1], t[2], t[3], t[4], lunar=args.lunar)
+            t = list(args.time) + [0] * (5 - len(args.time))
+            chart = qigua_by_time(t[0], t[1], t[2], t[3], t[4], lunar=args.lunar, zi_sect=args.zi_sect)
         elif args.numbers:
             chart = qigua_by_numbers(args.numbers[0], args.numbers[1])
         else:
             chart = build_gua(args.gua[0], args.gua[1], args.gua[2])
     except (ValueError, KeyError) as e:
         sys.exit(f"起卦失败：{e}")
+    except Exception as e:
+        sys.exit(f"起卦失败（意外错误，请核对输入）：{e}")
 
     if args.json:
         import json

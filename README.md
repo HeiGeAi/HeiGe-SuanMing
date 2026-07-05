@@ -6,8 +6,8 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.8.0-7c3aed.svg)
-![Engine](https://img.shields.io/badge/engine-1.3.0-0e7490.svg)
+![Skill](https://img.shields.io/badge/skill-1.8.1-7c3aed.svg)
+![Engine](https://img.shields.io/badge/engine-1.3.1-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-PolyForm%20NC-64748b.svg)
@@ -133,7 +133,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**梅花易数**
 
 **三、多用神冲突有决策树仲裁。** 调候、扶抑、格局、病药各执一词时该听谁的？`references/02` 给了一条五级优先级阶梯（先验从格 → 再急调候 → 扶抑定向 → 格局定点 → 病药校验），把流派之争收敛成一套可执行的取舍顺序。
 
-**四、排盘精度有回归测试兜底。** `tests/` 共 144 个测试（八字 97 + 梅花 22 + 六爻 25）。八字以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派（两派时干钉死）、大运顺逆、真太阳时（含农历叠加）、闰月、流月流日节气换月、合婚双盘对照、夏令时核时、年份边界、输入校验等边界；梅花以《梅花易数》「观梅占」黄金例校验起卦全链路（先天数取卦、互卦、变卦、体用生克）；六爻以京房定式钉死纳甲干支、八宫世应（含游魂归魂）、六亲配法与六神起法。改动脚本后跑 `python3 -m unittest discover -s tests`，全绿再用。
+**四、排盘精度有回归测试兜底。** `tests/` 共 173 个测试（八字 114 + 梅花 30 + 六爻 29）。八字以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派（两派时干钉死）、大运顺逆、真太阳时（含农历叠加）、闰月、流月流日节气换月、合婚双盘对照、夏令时核时、年份边界、输入校验等边界；梅花以《梅花易数》「观梅占」黄金例校验起卦全链路（先天数取卦、互卦、变卦、体用生克）；六爻以京房定式钉死纳甲干支、八宫世应（含游魂归魂）、六亲配法与六神起法。改动脚本后跑 `python3 -m unittest discover -s tests`，全绿再用。
 
 ---
 
@@ -146,6 +146,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**梅花易数**
 公历：1990-05-15 14:30　性别：男　生肖：马　星座：金牛
 农历：一九九〇年四月廿一
 节气：立夏（1990-05-06）后第 9 天，下一节气 小满
+夏令时：出生于 1990 年中国夏令时实施期（4/15–9/16，钟表较北京标准时快 1 小时）。若所记为当时钟表时间，真实时间应减 1 小时再定时柱，请核对。
 
 【四柱】     年柱    月柱    日柱    时柱
   天干十神   比肩    劫财    日主    伤官  
@@ -246,19 +247,24 @@ pip3 install -r ~/.claude/skills/bazi-mingli/requirements.txt
 
 ### 直接跑脚本（可选）
 
-排盘脚本可以脱离对话单独运行：
+三个引擎脚本都可以脱离对话单独运行：
 
 ```bash
+# 八字排盘
 python3 ~/.claude/skills/bazi-mingli/scripts/paipan.py 1990 5 15 14 30 --gender male --lng 113.3
+# 梅花易数起卦（数字起卦占一件事）
+python3 ~/.claude/skills/bazi-mingli/scripts/meihua.py --numbers 34 43 --query "问近期求职"
+# 六爻装卦（摇卦结果自初爻向上，6=老阴动 7=少阳 8=少阴 9=老阳动）
+python3 ~/.claude/skills/bazi-mingli/scripts/liuyao.py --yao 787888 --date 2026 6 15
 ```
 
-常用选项：`--lunar`（按农历，闰月用负数月表示，如 `-2` = 闰二月）、`--lng <经度>`（真太阳时，范围 -180~180，东经正西经负）、`--tz <时区偏移>`（出生地时区，默认 +8，配合 `--lng` 使用）、`--years <起始年> <年数>`（流年区间，默认从当前干支年按立春分界起 10 年）、`--json`（结构化输出）、`--zi-sect <1|2>`（子时流派）。支持公历 1600-2200 年，起运岁数按虚岁口径。
+八字常用选项：`--lunar`（按农历，闰月用负数月表示，如 `-2` = 闰二月）、`--lng <经度>`（真太阳时，范围 -180~180，东经正西经负）、`--tz <时区偏移>`（出生地时区，默认 +8，配合 `--lng` 使用）、`--years <起始年> <年数>`（流年区间，默认从当前干支年按立春分界起 10 年）、`--target-date <年 月 日>`（指定日流年流月流日干支事实，断语止于月）、`--partner <年 月 日 时 [分]>` 配 `--partner-lunar` / `--partner-gender`（合婚双盘对照，乙方历法独立声明）、`--json`（结构化输出）、`--zi-sect <1|2>`（子时流派）。支持公历 1600-2200 年，起运岁数按虚岁口径，1986-1991 夏令时期出生自动提示核时。
 
 ---
 
 ## 多 Agent 支持 Works with any agent
 
-技能核心是三块文本加一个脚本，**不绑定任何特定 Agent**：`SKILL.md`（十二步方法论指令）+ `scripts/paipan.py`（排盘引擎）+ `references/`（命理知识底座）。任何"能读本地文件 + 能跑 Python"的 AI Agent，都能驱动它排盘推演。
+技能核心是一层文本加三个脚本，**不绑定任何特定 Agent**：`SKILL.md`（方法论指令）+ `scripts/`（paipan 排盘、meihua 起卦、liuyao 装卦三个引擎）+ `references/`（术数知识底座）。任何"能读本地文件 + 能跑 Python"的 AI Agent，都能驱动它排盘推演与起卦断事。
 
 先做通用两步：
 
@@ -319,7 +325,7 @@ pip3 install -r HeiGe-SuanMing/requirements.txt
 <details>
 <summary><b>通用方式（任意 Agent）</b></summary>
 
-不依赖规则文件也行：直接对 Agent 说"读取 HeiGe-SuanMing/SKILL.md 并严格按它执行，排盘调用 scripts/paipan.py"，它就能照着跑。排盘脚本本身也能脱离对话单独运行（见上方[快速开始](#快速开始-quick-start)）。
+不依赖规则文件也行：直接对 Agent 说"读取 HeiGe-SuanMing/SKILL.md 并严格按它执行，排盘调用 scripts/paipan.py、起卦调用 scripts/meihua.py、装卦调用 scripts/liuyao.py"，它就能照着跑。三个引擎脚本本身也能脱离对话单独运行（见上方[快速开始](#快速开始-quick-start)）。
 </details>
 
 ### 为什么推荐 Claude Code + Claude Opus 4.8
@@ -396,7 +402,7 @@ HeiGe-SuanMing/
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings → guidance plus personalized health-cultivation and color/attire advice (lifestyle, diet, rest, and what to wear, tuned to the useful god, not folk "supplement what's missing"). Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/` locks all three engines with 144 regression tests (Bazi 97 + Meihua 22 + Liu Yao 25) against classical ground truth plus edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation, the classic Guanmei hexagram casting, and the Jing Fang Najia canon).
+**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/` locks all three engines with 173 regression tests (Bazi 114 + Meihua 30 + Liu Yao 29) against classical ground truth plus edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation, the classic Guanmei hexagram casting, and the Jing Fang Najia canon).
 
 **Optional: a one-page visual report.** Once the reading is done, the engine can (on request) render the whole thing into a single elegant HTML scroll: chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 
