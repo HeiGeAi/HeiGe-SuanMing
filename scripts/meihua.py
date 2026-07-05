@@ -21,9 +21,16 @@ License: PolyForm Noncommercial 1.0.0（完整条款见仓库根 LICENSE）
 """
 
 import argparse
+import os
 import sys
 
 __version__ = "1.0.1"
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+# 五行表与年份闸门统一从 paipan 引入，避免两处定义漂移（paipan 为原始核心引擎，零本地依赖）
+from paipan import ZHI, WUXING_SHENG, WUXING_KE, YEAR_MIN, YEAR_MAX  # noqa: E402
 
 # 先天八卦数：乾1 兑2 离3 震4 巽5 坎6 艮7 坤8
 XIANTIAN = {1: "乾", 2: "兑", 3: "离", 4: "震", 5: "巽", 6: "坎", 7: "艮", 8: "坤"}
@@ -47,10 +54,6 @@ TRIGRAM_LEI = {
     "艮": "山·少男·手·止·门阙·稳",
     "坤": "地·母·腹·众·柔顺·田土·吝啬",
 }
-WUXING_SHENG = {"木": "火", "火": "土", "土": "金", "金": "水", "水": "木"}
-WUXING_KE = {"木": "土", "土": "水", "水": "火", "火": "金", "金": "木"}
-ZHI = "子丑寅卯辰巳午未申酉戌亥"
-
 # 六十四卦名，键 (上卦, 下卦)
 _G = "乾兑离震巽坎艮坤"
 GUA64 = {
@@ -185,9 +188,6 @@ def qigua_by_time_numbers(year_zhi_idx, month, day, hour_zhi_idx):
     上卦=(年支+月+日)%8，下卦=(年支+月+日+时支)%8，动爻=(年支+月+日+时支)%6。"""
     s = year_zhi_idx + month + day
     return build_gua(_mod(s, 8), _mod(s + hour_zhi_idx, 8), _mod(s + hour_zhi_idx, 6))
-
-
-YEAR_MIN, YEAR_MAX = 1600, 2200  # 与 paipan.py 同口径（lunar_python 精度保证区间）
 
 
 def _validate_time_input(y, mo, d, h, mi, lunar):

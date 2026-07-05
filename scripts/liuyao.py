@@ -30,9 +30,9 @@ __version__ = "1.0.1"
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
-# 卦底座与五行表统一从 meihua 引入，避免三份拷贝漂移
-from meihua import (GUA64, TRIGRAM_YAO, YAO_TO_TRIGRAM, XIANTIAN, TRIGRAM_WX,  # noqa: E402
-                    ZHI, WUXING_SHENG, WUXING_KE, YEAR_MIN, YEAR_MAX)
+# 卦底座从 meihua 引入；五行表与年份闸门从 paipan 引入（唯一真源，避免多处拷贝漂移）
+from meihua import GUA64, TRIGRAM_YAO, YAO_TO_TRIGRAM, XIANTIAN, TRIGRAM_WX  # noqa: E402
+from paipan import ZHI, WUXING_SHENG, WUXING_KE, YEAR_MIN, YEAR_MAX  # noqa: E402
 
 ZHI_WUXING = {"子": "水", "丑": "土", "寅": "木", "卯": "木", "辰": "土", "巳": "火",
               "午": "火", "未": "土", "申": "金", "酉": "金", "戌": "土", "亥": "水"}
