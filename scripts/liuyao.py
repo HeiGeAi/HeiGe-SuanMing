@@ -16,25 +16,26 @@ License: PolyForm Noncommercial 1.0.0（完整条款见仓库根 LICENSE）
   python3 liuyao.py --yao 787888 --date 2026 6 15                # 摇卦：六位数自初爻向上
                                                                  #（6=老阴动 7=少阳 8=少阴 9=老阳动）
   python3 liuyao.py --gua 1 5 4 --date 2026 6 15 --query "问合作" # 直接给 上卦数 下卦数 动爻(0=静卦)
+  python3 liuyao.py --yao 787888 --date 2026 6 5 21              # 交节日补时辰精确定月建
   python3 liuyao.py --yao 999999                                  # 不给 --date 则略过六神/旬空/月建
+  python3 liuyao.py --yao 787888 --date 2026 6 15 --json          # JSON 输出
 """
 
 import argparse
 import os
 import sys
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
-from meihua import GUA64, TRIGRAM_YAO, YAO_TO_TRIGRAM, XIANTIAN, TRIGRAM_WX  # noqa: E402
+# 卦底座与五行表统一从 meihua 引入，避免三份拷贝漂移
+from meihua import (GUA64, TRIGRAM_YAO, YAO_TO_TRIGRAM, XIANTIAN, TRIGRAM_WX,  # noqa: E402
+                    ZHI, WUXING_SHENG, WUXING_KE, YEAR_MIN, YEAR_MAX)
 
-ZHI = "子丑寅卯辰巳午未申酉戌亥"
 ZHI_WUXING = {"子": "水", "丑": "土", "寅": "木", "卯": "木", "辰": "土", "巳": "火",
               "午": "火", "未": "土", "申": "金", "酉": "金", "戌": "土", "亥": "水"}
-WUXING_SHENG = {"木": "火", "火": "土", "土": "金", "金": "水", "水": "木"}
-WUXING_KE = {"木": "土", "土": "水", "水": "火", "火": "金", "金": "木"}
 
 # 京房纳甲：各经卦所纳天干（内卦用, 外卦用）
 NAJIA_GAN = {"乾": ("甲", "壬"), "坤": ("乙", "癸"), "震": ("庚", "庚"), "巽": ("辛", "辛"),
@@ -100,14 +101,22 @@ def _najia(up_tri, down_tri):
     return res
 
 
-def _date_context(y, mo, d):
-    """起卦日的月建（节气月支）、日干支、旬空。"""
+def _date_context(y, mo, d, h=None):
+    """起卦日的月建（节气月支）、日干支、旬空。h 缺省按正午取节气；交节日建议补时辰。"""
     try:
         from lunar_python import Solar
     except ImportError:
         sys.exit("缺少依赖 lunar_python，请先运行：pip3 install lunar_python")
-    ec = Solar.fromYmdHms(y, mo, d, 12, 0, 0).getLunar().getEightChar()
-    return {"月建": ec.getMonth()[1], "日辰": ec.getDay(), "旬空": ec.getDayXunKong()}
+    if not (YEAR_MIN <= y <= YEAR_MAX):
+        sys.exit(f"起卦年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {y}。")
+    try:
+        ec = Solar.fromYmdHms(y, mo, d, h if h is not None else 12, 0, 0).getLunar().getEightChar()
+    except Exception as e:
+        sys.exit(f"起卦日期无效（请核对）：{e}")
+    ctx = {"月建": ec.getMonth()[1], "日辰": ec.getDay(), "旬空": ec.getDayXunKong()}
+    if h is None:
+        ctx["提示"] = "月建按当日正午取节气；恰逢交节日时请在 --date 末尾补时辰（第 4 个数）再核。"
+    return ctx
 
 
 def build_pan(yao_marks, date=None):
@@ -190,6 +199,8 @@ def render_text(c, yao_bits, query=None):
     if c.get("日月"):
         dm = c["日月"]
         P(f"【日月】月建 {dm['月建']}　日辰 {dm['日辰']}　旬空 {dm['旬空']}")
+        if dm.get("提示"):
+            P(f"  ※ {dm['提示']}")
     P("")
     for i in range(5, -1, -1):
         line = c["爻"][i]
@@ -214,21 +225,25 @@ def main():
                    help="摇卦结果，自初爻向上六位：6=老阴(动) 7=少阳 8=少阴 9=老阳(动)，如 787888")
     g.add_argument("--gua", type=int, nargs=3, metavar=("上卦数", "下卦数", "动爻"),
                    help="直接指定：上卦数(1-8) 下卦数(1-8) 动爻(0-6，0=静卦)")
-    ap.add_argument("--date", type=int, nargs=3, metavar=("Y", "M", "D"),
-                    help="起卦公历日期，用于月建/日辰/旬空/六神；不传则略过")
+    ap.add_argument("--date", type=int, nargs="+", metavar="Y M D [H]",
+                    help="起卦公历日期（可选第4个数=时，交节日用于精确定月建），装月建/日辰/旬空/六神；不传则略过")
     ap.add_argument("--query", type=str, default=None, help="所占之事（一事一占）")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"liuyao v{__version__}")
     args = ap.parse_args()
 
     try:
-        if args.yao:
+        if args.yao is not None:
             if len(args.yao) != 6 or not args.yao.isdigit():
                 sys.exit("摇卦须为六位数字（自初爻向上），如 --yao 787888")
             marks = [int(x) for x in args.yao]
         else:
             marks = from_gua(args.gua[0], args.gua[1], args.gua[2])
         if args.date:
+            if not (3 <= len(args.date) <= 4):
+                sys.exit("--date 需 年 月 日 [时]，如 --date 2026 6 15 或 --date 2026 6 5 21")
+            if len(args.date) == 4 and not (0 <= args.date[3] <= 23):
+                sys.exit("--date 的时须为 0-23。")
             from datetime import datetime
             try:
                 datetime(args.date[0], args.date[1], args.date[2])
@@ -237,6 +252,8 @@ def main():
         pan = build_pan(marks, date=tuple(args.date) if args.date else None)
     except ValueError as e:
         sys.exit(f"装卦失败：{e}")
+    except Exception as e:
+        sys.exit(f"装卦失败（意外错误，请核对输入）：{e}")
 
     if args.json:
         import json

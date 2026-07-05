@@ -205,5 +205,44 @@ class TestCli(unittest.TestCase):
         self.assertIn("日期非法", r.stdout + r.stderr)
 
 
+# ============================================================
+# v1.0.1 审计修复回归（空串分支 / 年份闸门 / 交节补时辰）
+# ============================================================
+class TestAuditFixesV101(unittest.TestCase):
+
+    def _run(self, *extra):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "liuyao.py")
+        return subprocess.run([sys.executable, script, *extra], capture_output=True, text=True)
+
+    def test_empty_yao_clean_exit(self):
+        # L1：--yao "" 不再 TypeError 裸栈
+        r = self._run("--yao", "")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("摇卦须为六位数字", r.stdout + r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+
+    def test_date_year_gate(self):
+        # L2：极端年份干净拦截
+        for y in ("9999", "1582", "100"):
+            r = self._run("--yao", "787888", "--date", y, "6", "15")
+            self.assertNotEqual(r.returncode, 0, y)
+            self.assertIn("年份超出支持范围", r.stdout + r.stderr)
+
+    def test_date_hour_optional(self):
+        # L3：不补时辰给正午取样提示，补了则不给
+        r1 = self._run("--yao", "787888", "--date", "2026", "6", "5")
+        self.assertEqual(r1.returncode, 0)
+        self.assertIn("正午取节气", r1.stdout)
+        r2 = self._run("--yao", "787888", "--date", "2026", "6", "5", "21")
+        self.assertEqual(r2.returncode, 0)
+        self.assertNotIn("正午取节气", r2.stdout)
+
+    def test_date_hour_range(self):
+        r = self._run("--yao", "787888", "--date", "2026", "6", "5", "25")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("0-23", r.stdout + r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

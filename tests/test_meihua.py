@@ -173,5 +173,63 @@ class TestCli(unittest.TestCase):
         self.assertIn("本卦", r.stdout)
 
 
+# ============================================================
+# v1.0.1 审计修复回归（输入校验 / numbers 下限 / 晚子时口径）
+# ============================================================
+class TestInputValidationV101(unittest.TestCase):
+    """M1/M2/M3/L2：非法输入干净拦截，不裸 traceback、不静默错果。"""
+
+    def _run(self, *extra):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "meihua.py")
+        return subprocess.run([sys.executable, script, *extra], capture_output=True, text=True)
+
+    def test_numbers_below_one_rejected(self):
+        with self.assertRaises(ValueError):
+            meihua.qigua_by_numbers(0, 5)
+        with self.assertRaises(ValueError):
+            meihua.qigua_by_numbers(-3, 5)
+
+    def test_cli_hour_25(self):
+        r = self._run("--time", "2020", "3", "15", "25", "0")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("时0-23", r.stdout + r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+
+    def test_cli_day_32_rejected(self):
+        # 上游 lunar_python 校验有笔误放行日32，引擎侧必须自己拦
+        r = self._run("--time", "2020", "3", "32", "14", "0")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("日期非法", r.stdout + r.stderr)
+
+    def test_cli_year_gate(self):
+        r = self._run("--time", "100", "6", "15", "14", "0")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("年份超出支持范围", r.stdout + r.stderr)
+
+    def test_cli_lunar_short_month(self):
+        r = self._run("--time", "2020", "6", "30", "14", "0", "--lunar")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn("Traceback", r.stderr)
+
+
+class TestZiSectV101(unittest.TestCase):
+    """M4：晚子时取日口径可选，默认不换日。"""
+
+    def test_default_no_advance(self):
+        c = meihua.qigua_by_time(2026, 7, 4, 23, 30)
+        self.assertIn("20日", c["起卦法"].replace(" ", ""))
+
+    def test_sect1_advances_day(self):
+        c = meihua.qigua_by_time(2026, 7, 4, 23, 30, zi_sect=1)
+        self.assertIn("21日", c["起卦法"].replace(" ", ""))
+        self.assertIn("晚子归次日", c["起卦法"])
+
+    def test_non_zi_hour_unaffected(self):
+        a = meihua.qigua_by_time(2026, 7, 4, 14, 30)
+        b = meihua.qigua_by_time(2026, 7, 4, 14, 30, zi_sect=1)
+        self.assertEqual(a["本卦"]["名"], b["本卦"]["名"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
