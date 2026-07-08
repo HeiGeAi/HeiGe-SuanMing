@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.10.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.11.0-7c3aed.svg)
 ![Engine](https://img.shields.io/badge/engine-1.3.1-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
@@ -93,7 +93,10 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 第 9 步  趋避与调养：用神落到方位、行业，再给色彩服饰（穿戴随身环境）与作息饮食情志的个性化建议
 第 10 步 总评：3-5 句收束命局核心结构与一生大势
 第 11 步 可视化：（默认交付）把整份命书自动做成一页 HTML 报告，给出路径并直接打开
+第 12 步 主动推进：（默认）交付后主动列一份清单，问要不要往下做（合婚/流年/单维度深挖/养生色彩详单/紫微详参/起卦占事），选了才做
 ```
+
+> **交互范式：核心自动跑到底，延伸功能主动列清单问一次。** 给了生辰就一路排盘→推演→出 HTML 直接交付，中途不打断；核心命书给完后，再主动递一份「还能往下做什么」的简明清单让你挑，选了才做。既不闷头停下什么都不提，也不默认全铺开塞满一屏。
 
 知识底座放在 `references/`，推演时按需调用：
 
