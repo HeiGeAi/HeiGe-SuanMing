@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.9.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.10.0-7c3aed.svg)
 ![Engine](https://img.shields.io/badge/engine-1.3.1-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
@@ -46,7 +46,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 - ✅ **养生调养**：按用神喜忌 + 寒暖燥湿体质，给针对性的作息、饮食、情志、运动建议，认准用神、缺啥补啥是误区，参考非医嘱
 - ✅ **色彩服饰**：用神色落到衣着、首饰、配饰、随身物、居家办公，以颜色为主轴、宝石按色参考，审美优先、不承诺转运
 - ✅ **合婚合参**：双盘对照夫妻星宫、用神互补、日柱年支合冲、大运同步，只断相处模式与磨合点，不打分、不下「合 / 不合」判词
-- ✅ **可视化命书**：推演完成后可一键生成一页东方雅致的 HTML 命书，便于保存、回看、分享（断语与文字版逐字一致，先征询再生成）
+- ✅ **可视化命书**：推演完成后自动生成一页东方雅致的 HTML 命书并直接打开，便于保存、回看、分享（断语与文字版逐字一致，只要文字版说一声即可）
 - ✅ **梅花易数占卜（第二引擎）**：时间 / 数字 / 物象起卦，脚本算准本卦互卦变卦与体用定位，按体用生克断一件事的顺逆与过程，占卜非命理、一事一占、趋势化不打分
 - ✅ **六爻纳甲占卜（第三引擎）**：摇卦装卦全交脚本（纳甲干支、八宫世应、六亲、六神、动变卦、月建日辰旬空），按用神旺衰与动静生克细断一事，装卦定式以京房体系回归测试钉死
 - ✅ **紫微斗数安星（第五引擎）**：十二宫定位、五行局、紫微天府双星系、四化、六吉六煞、大限小限全交脚本算准，全部公式用开源实现 iztro 的真实测试用例交叉验证（40+ 数值核验点，39 项精确吻合）
@@ -92,7 +92,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 第 8 步  分维度：性格/事业/财运/婚姻/健康/学业/六亲，逐条带依据
 第 9 步  趋避与调养：用神落到方位、行业，再给色彩服饰（穿戴随身环境）与作息饮食情志的个性化建议
 第 10 步 总评：3-5 句收束命局核心结构与一生大势
-第 11 步 可视化：（可选）征询用户后，把整份命书做成一页 HTML 报告
+第 11 步 可视化：（默认交付）把整份命书自动做成一页 HTML 报告，给出路径并直接打开
 ```
 
 知识底座放在 `references/`，推演时按需调用：
@@ -106,7 +106,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 | `04_shishen_xiangyi.md` | 十神类象、四柱宫位、六亲取用、分维度断法 |
 | `05_geju.md` | 八格取法、成败救应、从格 / 专旺 / 化气等特殊格局 |
 | `06_shensha.md` | 常用神煞查法、吉凶象义、使用原则 |
-| `07_keshihua_baoshu.md` | 可视化命书：何时征询、HTML 结构模板、字体可靠性铁律、五行配色映射 |
+| `07_keshihua_baoshu.md` | 可视化命书：默认交付时机与输出规范、HTML 结构模板、字体可靠性铁律、五行配色映射 |
 | `08_gufu_duanyu.md` | 古籍赋文经验断语：渊海 / 三命 / 神峰赋诀分维度精选，短引＋白话＋调用提示 |
 | `09_shenfeng_tongkao.md` | 神峰通考：病药说、动静说、盖头截脚、伤官伤尽辨、十干体象、辟谬批判 |
 | `10_mingli_yueyan.md` | 命理约言理性派：生克扶抑总纲、用神精神说、格局正变、神煞纳音小运胎元祛魅清单 |
@@ -195,7 +195,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
   <br><sub>点图在线预览完整命书长卷 · 卷首命格诗四句点出命局核心（虚拟生辰演示）</sub>
 </p>
 
-文字推演（第 0–10 步）给完之后，引擎会主动问你一句：要不要把这份命书做成**一页可视化 HTML**，便于保存、回看、分享。你点头才做。
+文字推演（第 0–10 步）给完之后，引擎会直接把整份命书做成**一页可视化 HTML** 端到你面前：写入工作目录、给出路径、能打开就顺手帮你打开。只想要文字版，说一声就停在文字版。
 
 它把文字推演原样"呈现"成一卷东方雅致的命书长卷，不为排版另造任何结论：
 
@@ -411,7 +411,7 @@ HeiGe-SuanMing/
 
 **Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/` locks all four engines with 215 regression tests (Bazi 114 + Meihua 30 + Liu Yao 29 + Zi Wei Dou Shu 42) against classical ground truth plus edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation, the classic Guanmei hexagram casting, the Jing Fang Najia canon, and a real open-source implementation's test fixture for the Zi Wei star chart).
 
-**Optional: a one-page visual report.** Once the reading is done, the engine can (on request) render the whole thing into a single elegant HTML scroll: chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
+**A one-page visual report, delivered by default.** Once the reading is done, the engine automatically renders the whole thing into a single elegant HTML scroll and opens it for you (just say so if you only want the text version): chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 
 **Runs anywhere, tuned for Claude Code.** The core is just text plus a script — `SKILL.md` (methodology), `scripts/paipan.py` (chart engine), and `references/` (knowledge base) — so any agent that reads local files and runs Python can drive it (Codex, Cursor, Cline, Windsurf, Continue, Copilot, and so on): clone the repo, install deps, and point the agent's rules file at `SKILL.md`. That said, the best experience is **Claude Code + Claude Opus 4.8** — Bazi reasoning is one long dependent chain, and Opus is noticeably steadier at holding methodological discipline and never dropping the evidence behind a verdict.
 
