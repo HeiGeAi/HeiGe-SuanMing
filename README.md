@@ -467,3 +467,7 @@ PolyForm Noncommercial 1.0.0 © 2026 [HeiGeAi (Blake Xu)](https://github.com/Hei
 完整法律条款见 [`LICENSE`](./LICENSE)。代码开源，理性看命。
 
 **English:** This project is source-available under **PolyForm Noncommercial 1.0.0** — free for any noncommercial use (study, research, personal projects), with attribution required. **Any commercial use requires a separate license from the author** (open an Issue or reach out). Unauthorized commercial use violates the license.
+
+## 更多开源工具
+
+本项目属于黑哥 AI 的开源武器库。全部开源项目的清单、用途和协议,见 [heigeai.com/opensource](https://www.heigeai.com/opensource/)。
