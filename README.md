@@ -6,13 +6,13 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.11.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.12.0-7c3aed.svg)
 ![Engine](https://img.shields.io/badge/engine-1.3.1-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-PolyForm%20NC-64748b.svg)
 
-**黑哥算命 · 八字/紫微命理排盘推演 + 易卦占卜（梅花 · 六爻）| Bazi & Zi Wei Dou Shu destiny engines, plus Meihua & Liu Yao divination engines, that compute first, then reason**
+**黑哥算命 · 八字/紫微命理排盘推演 + 占测引擎（梅花 · 六爻 · 奇门遁甲）| Bazi & Zi Wei Dou Shu destiny engines, plus Meihua, Liu Yao & Qi Men Dun Jia divination engines, that compute first, then reason**
 
 像做技术分析一样算命：排盘、起卦、装卦交给脚本算准，推演按固定方法论逐层展开，每个结论都标注依据。
 
@@ -24,7 +24,7 @@
 
 ## 这是什么 What is this
 
-HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**第二命理引擎（批一生）与**梅花易数**、**六爻纳甲**两个占卜引擎（占一时一事），能跑在任何"会读文件 + 能调 Python"的 AI Agent 里（推荐 Claude Code + Claude Opus 4.8）。八字部分把算命拆成两层：
+HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**第二命理引擎（批一生）与**梅花易数**、**六爻纳甲**、**奇门遁甲**三个占测引擎（占一时一事），能跑在任何"会读文件 + 能调 Python"的 AI Agent 里（推荐 Claude Code + Claude Opus 4.8）。八字部分把算命拆成两层：
 
 **第一层：排盘用脚本算，绝不靠模型手推。**
 `scripts/paipan.py` 基于 `lunar_python` 做精确干支推算，自动处理三件最容易错的事：以**立春**定年柱（不是正月初一）、以**节气**定月柱（不是农历月）、按**真太阳时**校正时柱。再往上算齐藏干、十神、纳音、长生十二宫、旬空、胎元命宫身宫、地支刑冲合会、五行力量加权、神煞、大运流年。
@@ -50,6 +50,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 - ✅ **梅花易数占卜（第二引擎）**：时间 / 数字 / 物象起卦，脚本算准本卦互卦变卦与体用定位，按体用生克断一件事的顺逆与过程，占卜非命理、一事一占、趋势化不打分
 - ✅ **六爻纳甲占卜（第三引擎）**：摇卦装卦全交脚本（纳甲干支、八宫世应、六亲、六神、动变卦、月建日辰旬空），按用神旺衰与动静生克细断一事，装卦定式以京房体系回归测试钉死
 - ✅ **紫微斗数安星（第五引擎）**：十二宫定位、五行局、紫微天府双星系、四化、六吉六煞、大限小限全交脚本算准，全部公式用开源实现 iztro 的真实测试用例交叉验证（40+ 数值核验点，39 项精确吻合）
+- ✅ **奇门遁甲排局（第六引擎）**：时家转盘排局全交脚本（拆补法定局、地盘三奇六仪、旬首值符值使、天盘九星、八门飞宫、八神、旬空驿马伏吟反吟），全部公式经四个独立实现交叉核验，两个逐宫黄金盘进回归测试，流派分歧逐处裁决并标注
 
 ### 适合谁
 
@@ -123,8 +124,9 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 | `18_meihua_yishu.md` | 梅花易数占卜引擎（第二引擎，非命理）：起卦法、先天八卦数、体用生克断事、互变卦、卦气应期、八卦万物类象、《梅花易数》源流（占卜非命理、一事一占、不打分，配 `scripts/meihua.py`） |
 | `19_liuyao.md` | 六爻纳甲占卜引擎（第三引擎，非命理）：摇卦装卦、纳甲八宫世应六亲六神、取用神六亲对照、旺衰动静生克、空亡月破应期、京房至《增删卜易》源流（配 `scripts/liuyao.py`） |
 | `20_ziwei.md` | 紫微斗数安星引擎（第五引擎，命理）：十二宫定位、命宫干支五行局、紫微天府双星系（含天府定位公式纠错）、四化、六吉六煞、大限小限，全部公式经开源实现 iztro 真实测试用例交叉验证（配 `scripts/ziwei.py`；本版止于安星层） |
+| `21_qimen.md` | 奇门遁甲排局引擎（第六引擎，占测）：时家转盘排局（拆补法定局、72 局表、三元符头公式、地盘三奇六仪、旬首值符值使、天盘九星、八门飞宫、八神、旬空驿马伏吟反吟），全部公式经四个独立实现交叉核验，拆补/置闰与寄宫等流派分歧逐处裁决标注（配 `scripts/qimen.py`；本版止于排局层） |
 
-其中 `00` 是概念检索入口，`01-07` 是推演主干，`08-14` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典，《滴天髓》《子平真诠》两大主干更各有专篇（`13`、`14`）；`15`、`16` 是第 9 步的调养落地篇，把用神喜忌翻译成作息饮食情志（`15`）与色彩服饰（`16`）建议，`17` 是正派合婚双盘合参篇，`18`、`19` 是占卜引擎（梅花易数、六爻纳甲，占一时一事，与八字命理分属不同门类），`20` 是紫微斗数命理引擎（批一生，本版止于安星层）。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
+其中 `00` 是概念检索入口，`01-07` 是推演主干，`08-14` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典，《滴天髓》《子平真诠》两大主干更各有专篇（`13`、`14`）；`15`、`16` 是第 9 步的调养落地篇，把用神喜忌翻译成作息饮食情志（`15`）与色彩服饰（`16`）建议，`17` 是正派合婚双盘合参篇，`18`、`19`、`21` 是占测引擎（梅花易数、六爻纳甲、奇门遁甲，占一时一事，与八字命理分属不同门类），`20` 是紫微斗数命理引擎（批一生，本版止于安星层）。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
 
 ---
 
@@ -138,7 +140,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 
 **三、多用神冲突有决策树仲裁。** 调候、扶抑、格局、病药各执一词时该听谁的？`references/02` 给了一条五级优先级阶梯（先验从格 → 再急调候 → 扶抑定向 → 格局定点 → 病药校验），把流派之争收敛成一套可执行的取舍顺序。
 
-**四、排盘精度有回归测试兜底。** `tests/` 共 215 个测试（八字 114 + 梅花 30 + 六爻 29 + 紫微 42）。八字以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派（两派时干钉死）、大运顺逆、真太阳时（含农历叠加）、闰月、流月流日节气换月、合婚双盘对照、夏令时核时、年份边界、输入校验等边界；梅花以《梅花易数》「观梅占」黄金例校验起卦全链路（先天数取卦、互卦、变卦、体用生克）；六爻以京房定式钉死纳甲干支、八宫世应（含游魂归魂）、六亲配法与六神起法；紫微以开源实现 iztro 的真实测试用例为黄金案例，十二宫十四主星四化六吉六煞大限小限逐项核对。改动脚本后跑 `python3 -m unittest discover -s tests`，全绿再用。
+**四、排盘精度有回归测试兜底。** `tests/` 共 261 个测试（八字 114 + 梅花 30 + 六爻 29 + 紫微 42 + 奇门 46）。八字以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派（两派时干钉死）、大运顺逆、真太阳时（含农历叠加）、闰月、流月流日节气换月、合婚双盘对照、夏令时核时、年份边界、输入校验等边界；梅花以《梅花易数》「观梅占」黄金例校验起卦全链路（先天数取卦、互卦、变卦、体用生克）；六爻以京房定式钉死纳甲干支、八宫世应（含游魂归魂）、六亲配法与六神起法；紫微以开源实现 iztro 的真实测试用例为黄金案例，十二宫十四主星四化六吉六煞大限小限逐项核对；奇门以四个独立实现交叉的两个逐宫黄金盘钉死排局全链路，另锁交气时刻粒度、23 点换日、值使从中五起数三处最易错边界。改动脚本后跑 `python3 -m unittest discover -s tests`，全绿再用。
 
 ---
 
@@ -252,7 +254,7 @@ pip3 install -r ~/.claude/skills/bazi-mingli/requirements.txt
 
 ### 直接跑脚本（可选）
 
-三个引擎脚本都可以脱离对话单独运行：
+五个引擎脚本都可以脱离对话单独运行：
 
 ```bash
 # 八字排盘
@@ -263,6 +265,8 @@ python3 ~/.claude/skills/bazi-mingli/scripts/meihua.py --numbers 34 43 --query "
 python3 ~/.claude/skills/bazi-mingli/scripts/liuyao.py --yao 787888 --date 2026 6 15
 # 紫微斗数安星
 python3 ~/.claude/skills/bazi-mingli/scripts/ziwei.py 2000 8 16 3 30 --gender female
+# 奇门遁甲排局（时家转盘·拆补法）
+python3 ~/.claude/skills/bazi-mingli/scripts/qimen.py 2026 7 9 10 30
 ```
 
 八字常用选项：`--lunar`（按农历，闰月用负数月表示，如 `-2` = 闰二月）、`--lng <经度>`（真太阳时，范围 -180~180，东经正西经负）、`--tz <时区偏移>`（出生地时区，默认 +8，配合 `--lng` 使用）、`--years <起始年> <年数>`（流年区间，默认从当前干支年按立春分界起 10 年）、`--target-date <年 月 日>`（指定日流年流月流日干支事实，断语止于月）、`--partner <年 月 日 时 [分]>` 配 `--partner-lunar` / `--partner-gender`（合婚双盘对照，乙方历法独立声明）、`--json`（结构化输出）、`--zi-sect <1|2>`（子时流派）。支持公历 1600-2200 年，起运岁数按虚岁口径，1986-1991 夏令时期出生自动提示核时。
@@ -332,7 +336,7 @@ pip3 install -r HeiGe-SuanMing/requirements.txt
 <details>
 <summary><b>通用方式（任意 Agent）</b></summary>
 
-不依赖规则文件也行：直接对 Agent 说"读取 HeiGe-SuanMing/SKILL.md 并严格按它执行，排盘调用 scripts/paipan.py、起卦调用 scripts/meihua.py、装卦调用 scripts/liuyao.py、安星调用 scripts/ziwei.py"，它就能照着跑。四个引擎脚本本身也能脱离对话单独运行（见上方[快速开始](#快速开始-quick-start)）。
+不依赖规则文件也行：直接对 Agent 说"读取 HeiGe-SuanMing/SKILL.md 并严格按它执行，排盘调用 scripts/paipan.py、起卦调用 scripts/meihua.py、装卦调用 scripts/liuyao.py、安星调用 scripts/ziwei.py、排局调用 scripts/qimen.py"，它就能照着跑。五个引擎脚本本身也能脱离对话单独运行（见上方[快速开始](#快速开始-quick-start)）。
 </details>
 
 ### 为什么推荐 Claude Code + Claude Opus 4.8
@@ -352,7 +356,8 @@ HeiGe-SuanMing/
 │   ├── paipan.py                 # 八字精确排盘引擎（基于 lunar_python）
 │   ├── meihua.py                 # 梅花易数起卦引擎（先天八卦数+互变+体用）
 │   ├── liuyao.py                 # 六爻装卦引擎（纳甲+八宫世应+六亲+六神）
-│   └── ziwei.py                  # 紫微斗数安星引擎（十二宫+五行局+双星系+四化）
+│   ├── ziwei.py                  # 紫微斗数安星引擎（十二宫+五行局+双星系+四化）
+│   └── qimen.py                  # 奇门遁甲排局引擎（时家转盘·拆补法定局+星门神）
 ├── references/                   # 命理知识底座，推演时按需调用
 │   ├── 00_gainian_suoyin.md      # 命理概念 → 篇目检索索引（先看这里再按需深读）
 │   ├── 01_paipan_jichu.md
@@ -374,7 +379,8 @@ HeiGe-SuanMing/
 │   ├── 17_hehun.md               # 正派合婚双盘合参：用神互补+日柱年支合冲，不打分
 │   ├── 18_meihua_yishu.md        # 梅花易数占卜引擎：起卦+体用+互变，占一时一事
 │   ├── 19_liuyao.md              # 六爻纳甲占卜引擎：装卦+用神+旺衰生克应期
-│   └── 20_ziwei.md               # 紫微斗数安星引擎：十二宫+双星系+四化，命理批一生
+│   ├── 20_ziwei.md               # 紫微斗数安星引擎：十二宫+双星系+四化，命理批一生
+│   └── 21_qimen.md               # 奇门遁甲排局引擎：定局+布盘+值符值使，占一时一事
 ├── cases/                        # 完整推演范例，照着学怎么把方法落到真盘
 │   ├── 01_shenqiang_caiguan.md   # 身强用财官
 │   ├── 02_shenruo_yinbi.md       # 身弱用印比
@@ -384,7 +390,8 @@ HeiGe-SuanMing/
 │   ├── test_paipan.py            # 八字排盘回归测试（古法定式为基准）
 │   ├── test_meihua.py            # 梅花起卦回归测试（观梅占黄金例）
 │   ├── test_liuyao.py            # 六爻装卦回归测试（京房纳甲定式）
-│   └── test_ziwei.py             # 紫微安星回归测试（iztro 真实实现黄金案例）
+│   ├── test_ziwei.py             # 紫微安星回归测试（iztro 真实实现黄金案例）
+│   └── test_qimen.py             # 奇门排局回归测试（四源交叉逐宫黄金盘）
 ├── examples/
 │   └── 示例-八字命书.html         # 可视化命书样例（虚拟生辰，脱敏教学向）
 ├── assets/
@@ -406,13 +413,13 @@ HeiGe-SuanMing/
 
 ## English
 
-**HeiGe-SuanMing** is a Bazi (Four Pillars of Destiny) engine that runs inside any AI agent able to read local files and run Python (Claude Code + Claude Opus 4.8 recommended). It splits fortune-telling into two layers so the whole thing stays reproducible and auditable. It also ships a second destiny-reading engine — **Zi Wei Dou Shu (Purple Star Astrology)**, full star-chart assembly (twelve palaces, Five Elements bureau, the Ziwei/Tianfu star systems, the Four Transformations, lucky/unlucky stars, decade and annual limits), cross-validated against a real open-source implementation's test fixture — plus two divination engines — **Meihua Yishu (Plum Blossom I-Ching)** and **Liu Yao (Najia hexagram casting with full chart assembly: stems-and-branches, palace, Shi/Ying, six relatives, six spirits)** — for casting a hexagram on one specific question (distinct from life-reading).
+**HeiGe-SuanMing** is a Bazi (Four Pillars of Destiny) engine that runs inside any AI agent able to read local files and run Python (Claude Code + Claude Opus 4.8 recommended). It splits fortune-telling into two layers so the whole thing stays reproducible and auditable. It also ships a second destiny-reading engine — **Zi Wei Dou Shu (Purple Star Astrology)**, full star-chart assembly (twelve palaces, Five Elements bureau, the Ziwei/Tianfu star systems, the Four Transformations, lucky/unlucky stars, decade and annual limits), cross-validated against a real open-source implementation's test fixture — plus three divination engines — **Meihua Yishu (Plum Blossom I-Ching)**, **Liu Yao (Najia hexagram casting with full chart assembly: stems-and-branches, palace, Shi/Ying, six relatives, six spirits)**, and **Qi Men Dun Jia (hour-based rotating-plate chart casting: yin/yang cycle and bureau, earth plate, Duty Chief star and gate, nine stars, eight gates, eight deities, cross-validated against four independent implementations)** — for working one specific question (distinct from life-reading).
 
 **Layer 1 — the chart is computed, never hand-derived.** `scripts/paipan.py` uses `lunar_python` for precise stem-branch calculation, automatically handling the three things people get wrong most often: setting the year pillar by **Lichun** (start of spring, not lunar new year), the month pillar by **solar terms** (not the lunar month), and the hour pillar by **true solar time**. On top of that it computes hidden stems, ten gods, nayin, the twelve life stages, void branches, branch interactions (combinations / clashes / punishments), weighted five-element strength, symbolic stars, and the luck/annual pillars.
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings → guidance plus personalized health-cultivation and color/attire advice (lifestyle, diet, rest, and what to wear, tuned to the useful god, not folk "supplement what's missing"). Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/` locks all four engines with 215 regression tests (Bazi 114 + Meihua 30 + Liu Yao 29 + Zi Wei Dou Shu 42) against classical ground truth plus edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation, the classic Guanmei hexagram casting, the Jing Fang Najia canon, and a real open-source implementation's test fixture for the Zi Wei star chart).
+**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/` locks all five engines with 261 regression tests (Bazi 114 + Meihua 30 + Liu Yao 29 + Zi Wei Dou Shu 42 + Qi Men Dun Jia 46) against classical ground truth plus edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation, the classic Guanmei hexagram casting, the Jing Fang Najia canon, a real open-source implementation's test fixture for the Zi Wei star chart, and two palace-by-palace Qi Men golden charts cross-checked across four independent implementations).
 
 **A one-page visual report, delivered by default.** Once the reading is done, the engine automatically renders the whole thing into a single elegant HTML scroll and opens it for you (just say so if you only want the text version): chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 

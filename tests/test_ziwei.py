@@ -4,7 +4,7 @@
 ziwei.py 回归测试 · HeiGe-SuanMing / bazi-mingli skill
 
 以开源紫微斗数实现 iztro（github.com/SylarLong/iztro，MIT，官方测试用例
-astro.bySolar('2000-8-16', 2, '女', true)）的真实运算结果为基准真值——
+astro.bySolar('2000-8-16', 2, '女', true)）的真实运算结果为基准真值：
 十二宫、十四主星、四化、六吉六煞、大限、小限共 40+ 项数值经逐一核对全部吻合，
 是本库四门术数里第一个用第三方可复现开源实现（不依赖网站转述或古籍孤例）
 交叉核验过的黄金案例。

@@ -257,7 +257,7 @@ class TestTianDe(unittest.TestCase):
         self.assertIn("日", ss["天德贵人"])
 
     def test_yin_month_stem_ding_regression(self):
-        # 寅月天德=丁(天干)，丁透年干——天干型查法回归
+        # 寅月天德=丁(天干)，丁透年干：天干型查法回归
         ss = paipan.compute_shensha([("丁", "卯"), ("壬", "寅"), ("甲", "子"), ("乙", "丑")])
         self.assertIn("天德贵人", ss)
         self.assertIn("年", ss["天德贵人"])
@@ -562,7 +562,7 @@ class TestCliValidation(unittest.TestCase):
         self.assertIn("年份超出支持范围", r.stderr + r.stdout)
 
     def test_lunar_short_month_day30(self):
-        # 农历 1990 年四月为小月（29 天），30 日应友好报错而非裸 traceback
+        # 农历 1990 年四月为小月（29 天），30 日应友好报错，不允许裸 traceback
         r = self._run("1990", "4", "30", "12", "0", "--gender", "male", "--lunar")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("只有 29 天", r.stderr + r.stdout)
