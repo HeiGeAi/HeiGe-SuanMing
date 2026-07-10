@@ -320,6 +320,144 @@ class TestXunKongYima(unittest.TestCase):
         self.assertEqual({qimen.ZHI_GONG[m] for m in "寅申亥巳"}, {8, 2, 6, 4})
 
 
+class TestZhiRun(unittest.TestCase):
+    """置闰法定局（超神接气·符头分类法）。
+    oracle=元亨利贞在线置闰排盘实测（qimenpaipan 有五类缺陷只可借思路，
+    kinqimen 置闰分支有 bug，黄金值一律以元亨利贞为准，详见 references/21）。"""
+
+    BATTERY = [
+        # (公历日期, 期望遁, 期望局数)：35 项元亨利贞实测电池
+        ("2004-09-01", "阴", 9), ("2025-12-21", "阳", 1), ("2026-06-21", "阴", 9),
+        ("2024-06-07", "阳", 3), ("2024-06-15", "阴", 9), ("2024-11-30", "阴", 4),
+        ("2024-12-10", "阴", 1), ("2024-12-15", "阴", 4), ("2024-12-23", "阴", 1),
+        ("2024-12-27", "阳", 1), ("2023-12-25", "阳", 7), ("2025-06-11", "阳", 6),
+        ("2026-03-15", "阳", 7), ("2025-08-08", "阴", 2),
+        ("2025-12-06", "阴", 4), ("2019-12-10", "阴", 4), ("2016-06-15", "阳", 6),
+        ("2016-06-23", "阳", 9), ("2016-06-27", "阴", 9), ("2020-06-10", "阳", 3),
+        ("2022-12-10", "阴", 4), ("2018-12-15", "阴", 4), ("2018-12-25", "阴", 1),
+        ("2013-06-15", "阳", 6), ("2024-09-17", "阴", 1), ("2024-10-02", "阴", 9),
+        ("2024-10-17", "阴", 8), ("2024-11-01", "阴", 9), ("2024-11-21", "阴", 2),
+        ("2022-12-22", "阳", 1), ("2014-06-21", "阳", 9), ("2010-06-15", "阳", 6),
+        ("2010-12-15", "阴", 7), ("2013-12-15", "阴", 7), ("2012-12-18", "阳", 1),
+    ]
+
+    def test_golden_battery(self):
+        for ds, edun, eju in self.BATTERY:
+            y, m, d = map(int, ds.split("-"))
+            p = qimen.build_pan(y, m, d, 12, 0, ju_fa="zhirun")
+            self.assertEqual((p["局"]["遁"], p["局"]["局数"]), (edun, eju), ds)
+
+    def test_leap_min_flip(self):
+        # 两派阈值分歧窗口：2010 夏至 diff=8。派8（默认）闰芒种得阳6，
+        # 派9（古籍）不闰进夏至得阴9，连阴阳遁都翻转。
+        p8 = qimen.build_pan(2010, 6, 15, 10, 0, ju_fa="zhirun")
+        self.assertEqual((p8["局"]["遁"], p8["局"]["局数"]), ("阳", 6))
+        self.assertIn("闰芒种", p8["局"]["置闰状态"])
+        p9 = qimen.build_pan(2010, 6, 15, 10, 0, ju_fa="zhirun", leap_min=9)
+        self.assertEqual((p9["局"]["遁"], p9["局"]["局数"]), ("阴", 9))
+        self.assertIn("超神8天", p9["局"]["置闰状态"])
+
+    def test_status_labels(self):
+        # 正授：2025-12-21 甲子日恰为冬至交气日符头
+        p = qimen.build_pan(2025, 12, 21, 10, 0, ju_fa="zhirun")
+        self.assertEqual(p["局"]["置闰状态"], "正授")
+        self.assertEqual(p["局"]["节气归属"], "冬至")
+        # 置闰重复段：2024-12-15 闰大雪上元
+        p = qimen.build_pan(2024, 12, 15, 12, 0, ju_fa="zhirun")
+        self.assertIn("闰大雪", p["局"]["置闰状态"])
+        # 接气：2024-12-27 冬至上元（符头 12-26 甲子在交气 12-21 之后）
+        p = qimen.build_pan(2024, 12, 27, 12, 0, ju_fa="zhirun")
+        self.assertIn("接气", p["局"]["置闰状态"])
+        self.assertEqual(p["局"]["节气归属"], "冬至")
+
+    def test_no_leap_boundary(self):
+        # diff=7 反例：2027 夏至不闰，仍超神进夏至
+        p = qimen.build_pan(2027, 6, 18, 12, 0, ju_fa="zhirun")
+        self.assertEqual((p["局"]["遁"], p["局"]["局数"]), ("阴", 9))
+        self.assertIn("超神", p["局"]["置闰状态"])
+
+    def test_midnight_convention(self):
+        # 元亨利贞为午夜换日口径：2024-02-29 23:30 对拍须 zi_sect=2（日柱癸亥→阳3）
+        p = qimen.build_pan(2024, 2, 29, 23, 30, zi_sect=2, ju_fa="zhirun")
+        self.assertEqual(p["四柱"]["日柱"], "癸亥")
+        self.assertEqual((p["局"]["遁"], p["局"]["局数"]), ("阳", 3))
+
+    def test_chaibu_zhirun_disagree(self):
+        # 两法分歧锚点：2004-09-01 拆补=阴1（处暑上元），置闰=阴9（超神进白露）
+        pc = qimen.build_pan(2004, 9, 1, 10, 0)
+        pz = qimen.build_pan(2004, 9, 1, 10, 0, ju_fa="zhirun")
+        self.assertEqual((pc["局"]["遁"], pc["局"]["局数"]), ("阴", 1))
+        self.assertEqual((pz["局"]["遁"], pz["局"]["局数"]), ("阴", 9))
+
+
+class TestDuanJu(unittest.TestCase):
+    """断局标注层：十干克应/四害/星旺衰/格局（表与判定条件双源核验，见 references/22）。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.a = qimen.build_pan(2026, 7, 9, 10, 30)   # 黄金用例 A
+        cls.b = qimen.build_pan(2026, 1, 1, 12, 0)    # 黄金用例 B
+
+    def test_keying_case_a(self):
+        # 逐宫克应（天盘干+地盘干查表，取芮禽宫主干）
+        expect = {1: "贵人入狱", 2: "利阴害阳", 3: "华盖逢星", 4: "火悖地户",
+                  6: "大格", 7: "火入天罗", 8: "腾蛇相缠", 9: "白虎出力"}
+        for gong, name in expect.items():
+            self.assertEqual(self.a["九宫"][gong]["克应"], name, f"宫{gong}")
+
+    def test_keying_case_b(self):
+        # 宫9 天盘丁+地盘癸=朱雀投江（腾蛇夭矫是反向的癸+丁，勿混）
+        expect = {2: "水蛇入火", 4: "太白伏宫", 6: "值符飞宫", 9: "朱雀投江"}
+        for gong, name in expect.items():
+            self.assertEqual(self.b["九宫"][gong]["克应"], name, f"宫{gong}")
+
+    def test_sihai_marks(self):
+        # 击刑：A 盘天盘辛落离9（午自刑）
+        self.assertIn("击刑", self.a["九宫"][9]["标注"])
+        # 门迫：A 盘杜门（木）落坤2（土）、景门（火）落兑7（金）
+        self.assertIn("门迫", self.a["九宫"][2]["标注"])
+        self.assertIn("门迫", self.a["九宫"][7]["标注"])
+        # 门制：A 盘生门（土）落巽4（木）
+        self.assertIn("门制", self.a["九宫"][4]["标注"])
+
+    def test_star_wangshuai(self):
+        # A 盘月支未（土）：天英（火）生土=旺；天蓬（水）被土克=囚
+        self.assertEqual(self.a["九宫"][6]["星旺衰"], "旺")
+        self.assertEqual(self.a["九宫"][4]["星旺衰"], "囚")
+
+    def test_rumu(self):
+        # B 盘天盘戊落乾6 = 入墓（乙丙戊墓乾）
+        self.assertIn("入墓", self.b["九宫"][6]["标注"])
+
+    def test_patterns_tiandun(self):
+        # 2026-03-01 15:00：离9 生门+天盘丙+地盘丁=天遁，且丙落离9=三奇升殿
+        p = qimen.build_pan(2026, 3, 1, 15, 0)
+        self.assertTrue(any(x.startswith("天遁") for x in p["格局"]), p["格局"])
+        self.assertTrue(any("三奇升殿·丙" in x for x in p["格局"]))
+
+    def test_patterns_yunv_wubuyu(self):
+        # 2026-03-01 11:00：值使落离9地盘丁=玉女守门；甲戌日庚午时=五不遇时
+        p = qimen.build_pan(2026, 3, 1, 11, 0)
+        self.assertTrue(any(x.startswith("玉女守门") for x in p["格局"]))
+        self.assertTrue(p["五不遇时"])
+
+    def test_patterns_sanqi_deshi(self):
+        # 2026-03-01 03:00：巽4 天盘乙+地盘己=三奇得使
+        p = qimen.build_pan(2026, 3, 1, 3, 0)
+        self.assertTrue(any("三奇得使·乙加己" in x for x in p["格局"]))
+
+    def test_geng_ge(self):
+        # 2026-03-07 05:00：天盘庚+地盘日干=伏干格（兼日格）
+        p = qimen.build_pan(2026, 3, 7, 5, 0)
+        self.assertTrue(any(x.startswith("伏干格") for x in p["格局"]))
+
+    def test_keying_table_complete(self):
+        # 81 组克应表完备：9 天盘干 × 9 地盘干
+        self.assertEqual(len(qimen.KEYING), 9)
+        for tg, row in qimen.KEYING.items():
+            self.assertEqual(len(row), 9, tg)
+
+
 class TestValidation(unittest.TestCase):
     """非法输入须干净报错（非零退出、无 traceback）。"""
 

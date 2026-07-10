@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.12.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.13.0-7c3aed.svg)
 ![Engine](https://img.shields.io/badge/engine-1.3.1-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
@@ -49,8 +49,8 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 - ✅ **可视化命书**：推演完成后自动生成一页东方雅致的 HTML 命书并直接打开，便于保存、回看、分享（断语与文字版逐字一致，只要文字版说一声即可）
 - ✅ **梅花易数占卜（第二引擎）**：时间 / 数字 / 物象起卦，脚本算准本卦互卦变卦与体用定位，按体用生克断一件事的顺逆与过程，占卜非命理、一事一占、趋势化不打分
 - ✅ **六爻纳甲占卜（第三引擎）**：摇卦装卦全交脚本（纳甲干支、八宫世应、六亲、六神、动变卦、月建日辰旬空），按用神旺衰与动静生克细断一事，装卦定式以京房体系回归测试钉死
-- ✅ **紫微斗数安星（第五引擎）**：十二宫定位、五行局、紫微天府双星系、四化、六吉六煞、大限小限全交脚本算准，全部公式用开源实现 iztro 的真实测试用例交叉验证（40+ 数值核验点，39 项精确吻合）
-- ✅ **奇门遁甲排局（第六引擎）**：时家转盘排局全交脚本（拆补法定局、地盘三奇六仪、旬首值符值使、天盘九星、八门飞宫、八神、旬空驿马伏吟反吟），全部公式经四个独立实现交叉核验，两个逐宫黄金盘进回归测试，流派分歧逐处裁决并标注
+- ✅ **紫微斗数安星（第五引擎）**：十二宫定位、五行局、紫微天府双星系、四化、六吉六煞、大限小限、**命主身主、宫干飞化与离心向心自化、大限四化**全交脚本算准，安星公式用开源实现 iztro 的真实测试用例交叉验证（40+ 数值核验点 39 项精确吻合），命主飞化另经 iztro 实测逐项对拍
+- ✅ **奇门遁甲排局（第六引擎）**：时家转盘排局全交脚本（**拆补与置闰双排局法**、地盘三奇六仪、旬首值符值使、天盘九星、八门飞宫、八神、旬空驿马伏吟反吟），并输出**断局标注层**（逐宫十干克应、九星旺衰、击刑入墓门迫、格局清单、五不遇时），排局公式经四个独立实现交叉核验、置闰法 35 用例电池对拍在线权威排盘全过，断局定式配 81 组克应全表方法论专篇
 
 ### 适合谁
 
@@ -123,10 +123,11 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 | `17_hehun.md` | 正派合婚双盘合参：双方婚姻象 + 用神互补 + 日柱年支合冲 + 大运同步，只断相处模式与磨合点（禁打分、禁「合 / 不合」判词；属相相冲一票否决、合婚煞法等旧法不取） |
 | `18_meihua_yishu.md` | 梅花易数占卜引擎（第二引擎，非命理）：起卦法、先天八卦数、体用生克断事、互变卦、卦气应期、八卦万物类象、《梅花易数》源流（占卜非命理、一事一占、不打分，配 `scripts/meihua.py`） |
 | `19_liuyao.md` | 六爻纳甲占卜引擎（第三引擎，非命理）：摇卦装卦、纳甲八宫世应六亲六神、取用神六亲对照、旺衰动静生克、空亡月破应期、京房至《增删卜易》源流（配 `scripts/liuyao.py`） |
-| `20_ziwei.md` | 紫微斗数安星引擎（第五引擎，命理）：十二宫定位、命宫干支五行局、紫微天府双星系（含天府定位公式纠错）、四化、六吉六煞、大限小限，全部公式经开源实现 iztro 真实测试用例交叉验证（配 `scripts/ziwei.py`；本版止于安星层） |
-| `21_qimen.md` | 奇门遁甲排局引擎（第六引擎，占测）：时家转盘排局（拆补法定局、72 局表、三元符头公式、地盘三奇六仪、旬首值符值使、天盘九星、八门飞宫、八神、旬空驿马伏吟反吟），全部公式经四个独立实现交叉核验，拆补/置闰与寄宫等流派分歧逐处裁决标注（配 `scripts/qimen.py`；本版止于排局层） |
+| `20_ziwei.md` | 紫微斗数安星引擎（第五引擎，命理）：十二宫定位、命宫干支五行局、紫微天府双星系（含天府定位公式纠错）、四化、六吉六煞、大限小限、命主身主、宫干飞化与自化及断法框架层，全部公式经开源实现 iztro 真实测试用例与实测交叉验证（配 `scripts/ziwei.py`） |
+| `21_qimen.md` | 奇门遁甲排局篇（第六引擎，占测）：时家转盘排局（拆补与置闰双排局法、72 局表、三元符头公式、地盘三奇六仪、旬首值符值使、天盘九星、八门飞宫、八神、旬空驿马伏吟反吟），排局公式经四个独立实现交叉核验、置闰法 35 用例电池锁定，流派分歧逐处裁决标注（配 `scripts/qimen.py`） |
+| `22_qimen_duanju.md` | 奇门遁甲断局篇：用神体系与分事类定式、十干克应 81 组全表、吉凶格局判定条件、四害与旺衰、门星神吉凶、九步断局流程、应期十三法（引擎输出可计算标注，断语按此篇展开） |
 
-其中 `00` 是概念检索入口，`01-07` 是推演主干，`08-14` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典，《滴天髓》《子平真诠》两大主干更各有专篇（`13`、`14`）；`15`、`16` 是第 9 步的调养落地篇，把用神喜忌翻译成作息饮食情志（`15`）与色彩服饰（`16`）建议，`17` 是正派合婚双盘合参篇，`18`、`19`、`21` 是占测引擎（梅花易数、六爻纳甲、奇门遁甲，占一时一事，与八字命理分属不同门类），`20` 是紫微斗数命理引擎（批一生，本版止于安星层）。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
+其中 `00` 是概念检索入口，`01-07` 是推演主干，`08-14` 是经典典籍深化层，把方法论锚回《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等原典，《滴天髓》《子平真诠》两大主干更各有专篇（`13`、`14`）；`15`、`16` 是第 9 步的调养落地篇，把用神喜忌翻译成作息饮食情志（`15`）与色彩服饰（`16`）建议，`17` 是正派合婚双盘合参篇，`18`、`19`、`21`、`22` 是占测引擎篇（梅花易数、六爻纳甲、奇门遁甲排局与断局，占一时一事，与八字命理分属不同门类），`20` 是紫微斗数命理引擎（批一生，安星+命主身主+飞化）。这一层结构化、带出处、可直接读取，任何模型（不限于 Claude）接上 `references/` 都能据此推演，断准度有据可依。古籍多托名辑录，文中凡有争议处均标「存疑」，引用前先认版本。
 
 ---
 
@@ -140,7 +141,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 
 **三、多用神冲突有决策树仲裁。** 调候、扶抑、格局、病药各执一词时该听谁的？`references/02` 给了一条五级优先级阶梯（先验从格 → 再急调候 → 扶抑定向 → 格局定点 → 病药校验），把流派之争收敛成一套可执行的取舍顺序。
 
-**四、排盘精度有回归测试兜底。** `tests/` 共 261 个测试（八字 114 + 梅花 30 + 六爻 29 + 紫微 42 + 奇门 46）。八字以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派（两派时干钉死）、大运顺逆、真太阳时（含农历叠加）、闰月、流月流日节气换月、合婚双盘对照、夏令时核时、年份边界、输入校验等边界；梅花以《梅花易数》「观梅占」黄金例校验起卦全链路（先天数取卦、互卦、变卦、体用生克）；六爻以京房定式钉死纳甲干支、八宫世应（含游魂归魂）、六亲配法与六神起法；紫微以开源实现 iztro 的真实测试用例为黄金案例，十二宫十四主星四化六吉六煞大限小限逐项核对；奇门以四个独立实现交叉的两个逐宫黄金盘钉死排局全链路，另锁交气时刻粒度、23 点换日、值使从中五起数三处最易错边界。改动脚本后跑 `python3 -m unittest discover -s tests`，全绿再用。
+**四、排盘精度有回归测试兜底。** `tests/` 共 285 个测试（八字 114 + 梅花 30 + 六爻 29 + 紫微 50 + 奇门 62）。八字以命理古法定式为基准真值校验十神、藏干、长生、刑冲合会、神煞（含天德四个地支月与输出定序），再用立春换年柱、节气换月柱、流年立春分界、子时流派（两派时干钉死）、大运顺逆、真太阳时（含农历叠加）、闰月、流月流日节气换月、合婚双盘对照、夏令时核时、年份边界、输入校验等边界；梅花以《梅花易数》「观梅占」黄金例校验起卦全链路（先天数取卦、互卦、变卦、体用生克）；六爻以京房定式钉死纳甲干支、八宫世应（含游魂归魂）、六亲配法与六神起法；紫微以开源实现 iztro 的真实测试用例为黄金案例，十二宫十四主星四化六吉六煞大限小限逐项核对，命主身主与宫干飞化自化另经 iztro 实测对拍；奇门以四个独立实现交叉的两个逐宫黄金盘钉死排局全链路，置闰法以 35 用例在线权威电池锁定（含两派阈值翻转例），断局标注（克应/四害/格局）逐项钉死，另锁交气时刻粒度、23 点换日、值使从中五起数三处最易错边界。改动脚本后跑 `python3 -m unittest discover -s tests`，全绿再用。
 
 ---
 
@@ -379,8 +380,9 @@ HeiGe-SuanMing/
 │   ├── 17_hehun.md               # 正派合婚双盘合参：用神互补+日柱年支合冲，不打分
 │   ├── 18_meihua_yishu.md        # 梅花易数占卜引擎：起卦+体用+互变，占一时一事
 │   ├── 19_liuyao.md              # 六爻纳甲占卜引擎：装卦+用神+旺衰生克应期
-│   ├── 20_ziwei.md               # 紫微斗数安星引擎：十二宫+双星系+四化，命理批一生
-│   └── 21_qimen.md               # 奇门遁甲排局引擎：定局+布盘+值符值使，占一时一事
+│   ├── 20_ziwei.md               # 紫微斗数安星引擎：十二宫+双星系+四化+命主飞化，命理批一生
+│   ├── 21_qimen.md               # 奇门遁甲排局篇：拆补置闰定局+布盘+值符值使
+│   └── 22_qimen_duanju.md        # 奇门遁甲断局篇：用神+克应81表+格局+应期十三法
 ├── cases/                        # 完整推演范例，照着学怎么把方法落到真盘
 │   ├── 01_shenqiang_caiguan.md   # 身强用财官
 │   ├── 02_shenruo_yinbi.md       # 身弱用印比
@@ -419,7 +421,7 @@ HeiGe-SuanMing/
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings → guidance plus personalized health-cultivation and color/attire advice (lifestyle, diet, rest, and what to wear, tuned to the useful god, not folk "supplement what's missing"). Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/` locks all five engines with 261 regression tests (Bazi 114 + Meihua 30 + Liu Yao 29 + Zi Wei Dou Shu 42 + Qi Men Dun Jia 46) against classical ground truth plus edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation, the classic Guanmei hexagram casting, the Jing Fang Najia canon, a real open-source implementation's test fixture for the Zi Wei star chart, and two palace-by-palace Qi Men golden charts cross-checked across four independent implementations).
+**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors every method back to the canonical texts — Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, Sanming Tonghui, and more — with the two pillars (Ditian Sui and Ziping Zhenquan) each given a dedicated chapter. `cases/` ships four fully worked, desensitized readings across four day-masters and four strength structures, and `tests/` locks all five engines with 285 regression tests (Bazi 114 + Meihua 30 + Liu Yao 29 + Zi Wei Dou Shu 50 + Qi Men Dun Jia 62) against classical ground truth plus edge cases (Lichun, solar terms, leap months, midnight conventions, luck-cycle direction, true solar time, monthly/daily fleeting pillars, compatibility pairing, China DST, year bounds, input validation, the classic Guanmei hexagram casting, the Jing Fang Najia canon, a real open-source implementation's test fixture for the Zi Wei star chart plus soul/body-star and flying-transformation cross-checks, two palace-by-palace Qi Men golden charts cross-checked across four independent implementations, and a 35-case leap-adjustment battery verified against an authoritative online caster).
 
 **A one-page visual report, delivered by default.** Once the reading is done, the engine automatically renders the whole thing into a single elegant HTML scroll and opens it for you (just say so if you only want the text version): chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 

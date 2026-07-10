@@ -245,6 +245,70 @@ class TestDaxianXiaoxianDirection(unittest.TestCase):
         self.assertEqual(ziwei.xiaoxian_direction("female"), -1)
 
 
+class TestMingShenZhu(unittest.TestCase):
+    """命主（命宫地支）身主（生年支六星循环）。
+    iztro 本机实测三例对拍全中（astrolabe.soul/body 字段），命主取命宫地支
+    （非生年支）由官方用例实证：2000 庚辰年命宫午 → 破军（若按年支辰应为廉贞）。"""
+
+    def test_golden_case(self):
+        c = ziwei.build_chart(2000, 8, 16, 3, 30, "female")
+        self.assertEqual(c["命主"], "破军")   # 命宫午
+        self.assertEqual(c["身主"], "文昌")   # 年支辰
+
+    def test_second_case(self):
+        c = ziwei.build_chart(1990, 1, 1, 0, 30, "male")
+        self.assertEqual(c["命主"], "巨门")   # 命宫丑
+        self.assertEqual(c["身主"], "天机")   # 年支巳（己巳年）
+
+    def test_tables(self):
+        # 命主表对称结构：子午轴镜像（丑=亥、寅=戌、卯=酉、辰=申、巳=未）
+        self.assertEqual(len(ziwei.MINGZHU), 12)
+        for i in range(1, 6):
+            self.assertEqual(ziwei.MINGZHU[i], ziwei.MINGZHU[(12 - i) % 12], i)
+        # 身主六星循环：火相梁同昌机，子午皆火星（主流；子铃午火为存疑另说）
+        self.assertEqual(ziwei.SHENZHU_CYCLE[0], "火星")
+        self.assertEqual(ziwei.SHENZHU_CYCLE[ziwei.ZHI_IDX["午"] % 6], "火星")
+
+
+class TestFeiHua(unittest.TestCase):
+    """宫干飞化与自化（同一张四化表按宫干起；iztro mutagedPlaces/selfMutaged 逐项对拍）。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.c = ziwei.build_chart(2000, 8, 16, 3, 30, "female")
+        cls.g = cls.c["十二宫"]
+
+    def test_minggong_feihua(self):
+        # 命宫壬午：禄→天梁(子女) 权→紫微(命宫,自化权) 科→左辅(官禄) 忌→武曲(财帛)
+        fh = self.g["命宫"]["飞化"]
+        self.assertEqual((fh["化禄"]["星"], fh["化禄"]["入"]), ("天梁", "子女"))
+        self.assertEqual((fh["化权"]["星"], fh["化权"]["入"]), ("紫微", "命宫"))
+        self.assertEqual((fh["化科"]["星"], fh["化科"]["入"]), ("左辅", "官禄"))
+        self.assertEqual((fh["化忌"]["星"], fh["化忌"]["入"]), ("武曲", "财帛"))
+
+    def test_fuxing_located(self):
+        # 四化星含辅星（左辅/文昌/文曲/右弼），定位函数必须覆盖（终审钉过的坑）
+        fh = self.g["兄弟"]["飞化"]  # 辛巳：科文曲、忌文昌，均为辅星
+        self.assertEqual((fh["化科"]["星"], fh["化科"]["入"]), ("文曲", "命宫"))
+        self.assertEqual((fh["化忌"]["星"], fh["化忌"]["入"]), ("文昌", "福德"))
+
+    def test_zihua_lixin(self):
+        # 官禄宫丙戌坐廉贞，丙忌=廉贞 → 自化忌（离心，iztro selfMutaged('忌')=true）
+        self.assertIn("化忌", self.g["官禄"]["自化"]["离心"])
+        # 命宫壬午坐紫微，壬权=紫微 → 自化权
+        self.assertIn("化权", self.g["命宫"]["自化"]["离心"])
+
+    def test_zihua_xiangxin(self):
+        # 向心自化：对宫干化入本宫。子女宫（卯）对宫田宅（乙酉），乙权=天梁在子女
+        self.assertIn("化权", self.g["子女"]["自化"]["向心"])
+
+    def test_daxian_sihua(self):
+        # 大限四化=大限宫干查同表：第3限夫妻宫庚辰 → 庚干四化
+        dx3 = self.c["大限"][2]
+        self.assertEqual(dx3["宫干"], "庚")
+        self.assertEqual(dx3["四化"], ziwei.SIHUA["庚"])
+
+
 class TestValidation(unittest.TestCase):
     """输入校验：非法输入干净报错，不裸 traceback、不静默错果。"""
 

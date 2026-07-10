@@ -25,7 +25,7 @@ import argparse
 import os
 import sys
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
@@ -147,6 +147,17 @@ SIHUA = {
     "壬": {"化禄": "天梁", "化权": "紫微", "化科": "左辅", "化忌": "武曲"},  # 存疑：另说科天府
     "癸": {"化禄": "破军", "化权": "巨门", "化科": "太阴", "化忌": "贪狼"},
 }
+
+# ============================================================
+# 命主（按命宫地支，主流软件口径；另有按生年支一说，见 references/20）
+# 口诀「子属贪狼丑亥门，寅戌生人属禄存，卯酉属文巳未武，辰申廉宿午破军」
+# 身主（按生年地支，「火相梁同昌机」六星循环；主流子午皆火星，
+# 「子铃午火」为诀面另一读法、孤证存疑，见 references/20）
+# ============================================================
+MINGZHU = {0: "贪狼", 1: "巨门", 2: "禄存", 3: "文曲", 4: "廉贞", 5: "武曲",
+           6: "破军", 7: "武曲", 8: "廉贞", 9: "文曲", 10: "禄存", 11: "巨门"}
+SHENZHU_CYCLE = ["火星", "天相", "天梁", "天同", "文昌", "天机"]
+
 
 # ============================================================
 # 六吉星：文昌文曲按时辰、左辅右弼按生月，天魁天钺按年干贵人表
@@ -294,7 +305,15 @@ def build_chart(y, mo, d, h, mi, gender, lunar=False):
     daxian = daxian_list(ju, ming_gong_idx, year_gan, gender)
     xiaoxian_ages = {age: xiaoxian_gong(year_zhi_idx, gender, age) for age in range(1, 13)}
 
-    # 逐宫汇总：宫名 -> {地支, 主星[], 四化[], 六吉[], 六煞[]}
+    # 命主（命宫地支）、身主（生年支，六星循环）
+    mingzhu = MINGZHU[ming_gong_idx]
+    shenzhu = SHENZHU_CYCLE[year_zhi_idx % 6]
+
+    # 四化定位表：主星 + 六吉辅星（戊科右弼、己忌文曲、辛忌文昌、壬科左辅
+    # 均为辅星，飞化定位必须覆盖，终审实测钉过此坑）
+    star_pos = {**major_stars, **liuji}
+
+    # 逐宫汇总：宫名 -> {地支, 主星[], 四化[], 六吉[], 六煞[], 飞化, 自化}
     idx_to_palace = {v: k for k, v in palaces_idx.items()}
     gong_detail = {}
     for name, idx in palaces_idx.items():
@@ -309,6 +328,20 @@ def build_chart(y, mo, d, h, mi, gender, lunar=False):
             "身宫": (idx == shen_gong_idx),
         }
 
+    # 宫干飞化：以各宫宫干查同一张四化表（生年四化是体、宫干飞化是用），
+    # 定位四化星落宫；自化=宫干化本宫星（离心，默认义），对宫干化入本宫为向心
+    for name, idx in palaces_idx.items():
+        gan_here = gong_detail[name]["干支"][0]
+        feihua = {}
+        for tag, star in SIHUA[gan_here].items():
+            feihua[tag] = {"星": star, "入": idx_to_palace[star_pos[star]]}
+        lixin = [tag for tag, star in SIHUA[gan_here].items() if star_pos[star] == idx]
+        dui_idx = (idx + 6) % 12
+        dui_gan = gong_detail[idx_to_palace[dui_idx]]["干支"][0]
+        xiangxin = [tag for tag, star in SIHUA[dui_gan].items() if star_pos[star] == idx]
+        gong_detail[name]["飞化"] = feihua
+        gong_detail[name]["自化"] = {"离心": lixin, "向心": xiangxin}
+
     return {
         "version": __version__,
         "input": {"solar_or_lunar_input": "农历" if lunar else "公历",
@@ -317,9 +350,14 @@ def build_chart(y, mo, d, h, mi, gender, lunar=False):
         "命宫": {"地支": ZHI[ming_gong_idx], "干支": mg_gan + ZHI[ming_gong_idx]},
         "身宫": {"地支": ZHI[shen_gong_idx], "所在宫": idx_to_palace[shen_gong_idx]},
         "五行局": f"{wx_name}{ju}局",
+        "命主": mingzhu, "身主": shenzhu,
         "紫微": ZHI[ziwei_idx], "天府": ZHI[tianfu_idx],
         "十二宫": gong_detail,
-        "大限": [{"限": d_["限"], "起": d_["起"], "止": d_["止"], "宫": idx_to_palace[d_["宫"]]} for d_ in daxian],
+        "大限": [{"限": d_["限"], "起": d_["起"], "止": d_["止"],
+                  "宫": idx_to_palace[d_["宫"]],
+                  "宫干": gong_detail[idx_to_palace[d_["宫"]]]["干支"][0],
+                  "四化": SIHUA[gong_detail[idx_to_palace[d_["宫"]]]["干支"][0]]}
+                for d_ in daxian],
         "小限(1-12岁)": {age: idx_to_palace[idx] for age, idx in xiaoxian_ages.items()},
     }
 
@@ -332,7 +370,7 @@ def render_text(c):
     lu = c["lunar"]
     P(f"农历：{lu['年干支']}年 {lu['月']}月 {lu['日']}日 {lu['时支']}时")
     P(f"命宫：{c['命宫']['干支']}　身宫：{c['身宫']['地支']}（在{c['身宫']['所在宫']}）　五行局：{c['五行局']}")
-    P(f"紫微：{c['紫微']}　天府：{c['天府']}")
+    P(f"紫微：{c['紫微']}　天府：{c['天府']}　命主：{c['命主']}　身主：{c['身主']}")
     P("")
     P("【十二宫】")
     for name, d_ in c["十二宫"].items():
@@ -345,12 +383,32 @@ def render_text(c):
             extra.append("六吉:" + "、".join(d_["六吉"]))
         if d_["六煞"]:
             extra.append("六煞:" + "、".join(d_["六煞"]))
+        zihua = d_["自化"]
+        if zihua["离心"] or zihua["向心"]:
+            zh = []
+            if zihua["离心"]:
+                zh.append("自" + "".join(t[-1] for t in zihua["离心"]))
+            if zihua["向心"]:
+                zh.append("向心" + "".join(t[-1] for t in zihua["向心"]))
+            extra.append("·".join(zh))
         extra_s = ("　" + "　".join(extra)) if extra else ""
         P(f"  {name}　{d_['干支']}　{stars}{extra_s}{tag}")
     P("")
-    P("【大限】（起运虚岁=五行局数，方向由年干阴阳+性别定）")
+    P("【宫干飞化】（各宫宫干起四化；生年四化为体、飞化为用，断法见 references/20）")
+    for name, d_ in c["十二宫"].items():
+        fh = d_["飞化"]
+        parts = []
+        for tag in ("化禄", "化权", "化科", "化忌"):
+            e = fh[tag]
+            mark = "·自化" if e["入"] == name else ""
+            parts.append(f"{tag[-1]}→{e['星']}({e['入']}{mark})")
+        P(f"  {name}{d_['干支']}　" + "　".join(parts))
+    P("")
+    P("【大限】（起运虚岁=五行局数，方向由年干阴阳+性别定；附大限宫干四化）")
     for d_ in c["大限"]:
-        P(f"  第{d_['限']}限　{d_['起']}-{d_['止']}岁　{d_['宫']}")
+        sh = d_["四化"]
+        sh_s = "　".join(f"{t[-1]}{s}" for t, s in sh.items())
+        P(f"  第{d_['限']}限　{d_['起']}-{d_['止']}岁　{d_['宫']}（{d_['宫干']}干：{sh_s}）")
     P("")
     P("【小限】（1-12岁，方向仅按性别，不看年干阴阳）")
     P("  " + "　".join(f"{age}岁:{name}" for age, name in c["小限(1-12岁)"].items()))
