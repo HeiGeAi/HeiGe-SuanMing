@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-梅花易数起卦引擎 v1.0 · HeiGe-SuanMing / bazi-mingli skill
+梅花易数起卦引擎 v1.1 · HeiGe-SuanMing / bazi-mingli skill
 
 把梅花易数最容易手推错的一段（先天八卦数取余定卦、互卦、变卦、体用定位）交给脚本算准，
 推演层（体用生克断吉凶、卦气旺衰、应期、万物类象）见 references/18_meihua_yishu.md。
@@ -24,7 +24,7 @@ import argparse
 import os
 import sys
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
@@ -193,57 +193,60 @@ def qigua_by_time_numbers(year_zhi_idx, month, day, hour_zhi_idx):
 def _validate_time_input(y, mo, d, h, mi, lunar):
     """时间起卦前置校验：与 paipan.py 同风格的中文报错，不把上游裸异常漏给用户。"""
     if not (YEAR_MIN <= y <= YEAR_MAX):
-        sys.exit(f"年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {y}。")
+        raise ValueError(f"年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {y}。")
     if not (0 <= h <= 23 and 0 <= mi <= 59):
-        sys.exit("输入有误：时0-23、分0-59。")
+        raise ValueError("输入有误：时0-23、分0-59。")
     if lunar:
         if not (1 <= mo <= 12 or -12 <= mo <= -1):
-            sys.exit("农历月须为 1-12，闰月用对应负数表示（如 -2=闰二月）。")
+            raise ValueError("农历月须为 1-12，闰月用对应负数表示（如 -2=闰二月）。")
         if not (1 <= d <= 30):
-            sys.exit("农历日须为 1-30。")
+            raise ValueError("农历日须为 1-30。")
     else:
         from datetime import datetime
         try:
             datetime(y, mo, d, h, mi)
         except ValueError as e:
-            sys.exit(f"日期非法：{e}")
+            raise ValueError(f"日期非法：{e}") from e
 
 
 def qigua_by_time(y, mo, d, h, mi, lunar=False, zi_sect=2):
     """公历(默认)或农历时间起卦，用 lunar_python 取农历年支序/月/日/时支序。
     zi_sect：晚子时（23 点后）取日口径，1=归次日、2=不换日（默认，主流梅花口径之一，起卦前声明即可）。"""
-    try:
-        from lunar_python import Solar, Lunar
-    except ImportError:
-        sys.exit("缺少依赖 lunar_python，请先运行：pip3 install lunar_python")
+    if zi_sect not in (1, 2):
+        raise ValueError("zi_sect 只能为 1（晚子归次日）或 2（不换日）")
     _validate_time_input(y, mo, d, h, mi, lunar)
     try:
+        from lunar_python import Solar, Lunar
+    except ImportError as e:
+        raise RuntimeError("缺少依赖 lunar_python，请先运行：pip3 install lunar_python") from e
+    try:
+        advanced = zi_sect == 1 and h == 23
         if lunar:
             lun = Lunar.fromYmdHms(y, mo, d, h, mi, 0)
+            if advanced:
+                from datetime import datetime, timedelta
+                solar = lun.getSolar()
+                nd = datetime(solar.getYear(), solar.getMonth(), solar.getDay()) + timedelta(days=1)
+                lun = Solar.fromYmdHms(nd.year, nd.month, nd.day, 23, mi, 0).getLunar()
         else:
-            if zi_sect == 1 and h == 23:
+            if advanced:
                 # 晚子归次日：日数取次日农历日（时支仍为子）
                 from datetime import datetime, timedelta
                 nd = datetime(y, mo, d, h, mi) + timedelta(hours=1)
                 lun = Solar.fromYmdHms(nd.year, nd.month, nd.day, 23, mi, 0).getLunar()
-                lun_next = Solar.fromYmdHms(nd.year, nd.month, nd.day, 12, 0, 0).getLunar()
-                year_idx = ZHI.index(lun_next.getYearZhi()) + 1
-                month = abs(lun_next.getMonth())
-                day = lun_next.getDay()
-                hour_idx = 1  # 子
-                res = qigua_by_time_numbers(year_idx, month, day, hour_idx)
-                res["起卦法"] = (f"时间起卦（晚子归次日）：农历{lun_next.getYearInGanZhi()}年 {month}月 {day}日 子时"
-                                f"（年支{year_idx}+月{month}+日{day}+时支{hour_idx}）")
-                return res
-            lun = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar()
+            else:
+                lun = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar()
     except Exception as e:
-        sys.exit(f"时间起卦失败（请核对日期是否存在，农历留意小月）：{e}")
+        raise ValueError(f"时间起卦失败（请核对日期是否存在，农历留意小月）：{e}") from e
     year_idx = ZHI.index(lun.getYearZhi()) + 1     # 子1..亥12
-    month = abs(lun.getMonth())                     # 农历月（闰月取绝对值）
+    lunar_month = lun.getMonth()
+    month = abs(lunar_month)                        # 闰月与本月取数相同
+    month_label = f"{'闰' if lunar_month < 0 else ''}{month}"
     day = lun.getDay()
     hour_idx = ZHI.index(lun.getTimeZhi()) + 1
     res = qigua_by_time_numbers(year_idx, month, day, hour_idx)
-    res["起卦法"] = (f"时间起卦：农历{lun.getYearInGanZhi()}年 {month}月 {day}日 {lun.getTimeZhi()}时"
+    method = "时间起卦（晚子归次日）" if advanced else "时间起卦"
+    res["起卦法"] = (f"{method}：农历{lun.getYearInGanZhi()}年 {month_label}月 {day}日 {lun.getTimeZhi()}时"
                     f"（年支{year_idx}+月{month}+日{day}+时支{hour_idx}）")
     return res
 
@@ -307,11 +310,13 @@ def main():
             chart = qigua_by_numbers(args.numbers[0], args.numbers[1])
         else:
             chart = build_gua(args.gua[0], args.gua[1], args.gua[2])
-    except (ValueError, KeyError) as e:
+    except (ValueError, KeyError, RuntimeError) as e:
         sys.exit(f"起卦失败：{e}")
     except Exception as e:
         sys.exit(f"起卦失败（意外错误，请核对输入）：{e}")
 
+    if args.query:
+        chart["query"] = args.query
     if args.json:
         import json
         print(json.dumps(chart, ensure_ascii=False, indent=2))

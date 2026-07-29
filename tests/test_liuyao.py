@@ -11,9 +11,11 @@ liuyao.py 回归测试 · HeiGe-SuanMing / bazi-mingli skill
   python3 -m unittest discover -s tests
 """
 
+import json
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SCRIPTS = os.path.join(os.path.dirname(_HERE), "scripts")
@@ -242,6 +244,48 @@ class TestAuditFixesV101(unittest.TestCase):
         r = self._run("--yao", "787888", "--date", "2026", "6", "5", "25")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("0-23", r.stdout + r.stderr)
+
+
+class TestAuditFixesV110(unittest.TestCase):
+    """v1.1.0：分钟级交节、核心日期校验与 JSON 所占。"""
+
+    def _run(self, *extra):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "liuyao.py")
+        return subprocess.run([sys.executable, script, *extra], capture_output=True, text=True)
+
+    def test_date_accepts_minute_at_solar_term_boundary(self):
+        before = liuyao.build_pan([7] * 6, date=(2026, 6, 5, 23, 48))
+        after = liuyao.build_pan([7] * 6, date=(2026, 6, 5, 23, 49))
+        self.assertEqual(before["日月"]["月建"], "巳")
+        self.assertEqual(after["日月"]["月建"], "午")
+
+    def test_old_three_and_four_item_dates_still_work(self):
+        self.assertIn("提示", liuyao.build_pan([7] * 6, date=(2026, 6, 5))["日月"])
+        self.assertNotIn("提示", liuyao.build_pan([7] * 6, date=(2026, 6, 5, 21))["日月"])
+
+    def test_core_rejects_nonexistent_date_with_value_error(self):
+        with self.assertRaises(ValueError):
+            liuyao.build_pan([7] * 6, date=(2026, 2, 30))
+
+    def test_core_rejects_bad_minute_with_value_error(self):
+        with self.assertRaises(ValueError):
+            liuyao.build_pan([7] * 6, date=(2026, 6, 5, 21, 60))
+
+    def test_missing_dependency_is_runtime_error(self):
+        with patch.dict(sys.modules, {"lunar_python": None}):
+            with self.assertRaises(RuntimeError):
+                liuyao.build_pan([7] * 6, date=(2026, 6, 5))
+
+    def test_cli_accepts_minute(self):
+        r = self._run("--yao", "787888", "--date", "2026", "6", "5", "23", "49")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("月建 午", r.stdout)
+
+    def test_json_keeps_query(self):
+        r = self._run("--yao", "787888", "--query", "问合作", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["query"], "问合作")
 
 
 if __name__ == "__main__":

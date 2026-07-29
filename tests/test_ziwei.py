@@ -5,7 +5,7 @@ ziwei.py 回归测试 · HeiGe-SuanMing / bazi-mingli skill
 
 以开源紫微斗数实现 iztro（github.com/SylarLong/iztro，MIT，官方测试用例
 astro.bySolar('2000-8-16', 2, '女', true)）的真实运算结果为基准真值：
-十二宫、十四主星、四化、六吉六煞、大限、小限共 40+ 项数值经逐一核对全部吻合，
+十二宫、十四主星、四化、六吉、禄存、六煞、大限、小限共 40+ 项数值经逐一核对全部吻合，
 是本库四门术数里第一个用第三方可复现开源实现（不依赖网站转述或古籍孤例）
 交叉核验过的黄金案例。
 
@@ -81,11 +81,16 @@ class TestGoldenCase(unittest.TestCase):
 
     def test_liusha_stars(self):
         expect = {"夫妻": "火星", "疾厄": "地劫", "迁移": "铃星",
-                 "田宅": ["擎羊", "地空"], "福德": "禄存", "父母": "陀罗"}
+                 "田宅": ["擎羊", "地空"], "父母": "陀罗"}
         for name, star in expect.items():
             want = star if isinstance(star, list) else [star]
             for w in want:
                 self.assertIn(w, self.c["十二宫"][name]["六煞"], name)
+        all_shas = [star for palace in self.c["十二宫"].values() for star in palace["六煞"]]
+        self.assertEqual(set(all_shas), {"擎羊", "陀罗", "火星", "铃星", "地空", "地劫"})
+        self.assertNotIn("禄存", all_shas)
+        self.assertEqual(self.c["禄存"], {"地支": "申", "所在宫": "福德"})
+        self.assertTrue(self.c["十二宫"]["福德"]["禄存"])
 
     def test_shen_gong_marked(self):
         self.assertTrue(self.c["十二宫"]["官禄"]["身宫"])
@@ -224,6 +229,24 @@ class TestSihuaTable(unittest.TestCase):
         self.assertEqual(ziwei.SIHUA["庚"]["化科"], "太阴")
         self.assertEqual(ziwei.SIHUA["庚"]["化忌"], "天同")
 
+    def test_birth_sihua_locates_auxiliary_stars(self):
+        # 丙戊己辛壬年的生年四化含文昌、文曲、左辅、右弼，不能只查十四主星。
+        cases = [
+            (1996, "丙", {"化科": "文昌"}),
+            (1998, "戊", {"化科": "右弼"}),
+            (1999, "己", {"化忌": "文曲"}),
+            (2001, "辛", {"化科": "文曲", "化忌": "文昌"}),
+            (2002, "壬", {"化科": "左辅"}),
+        ]
+        for year, gan, expected in cases:
+            c = ziwei.build_chart(year, 6, 15, 12, 0, "male")
+            self.assertTrue(c["lunar"]["年干支"].startswith(gan))
+            for tag, star in expected.items():
+                palace = next(name for name, detail in c["十二宫"].items()
+                              if star in detail["六吉"])
+                self.assertIn(f"{star}{tag}", c["十二宫"][palace]["四化"],
+                              f"{gan}年{star}{tag}应落入{palace}")
+
 
 class TestDaxianXiaoxianDirection(unittest.TestCase):
     """大限方向=年干阴阳+性别；小限方向=仅性别。两套独立逻辑不可共用一个变量。"""
@@ -336,6 +359,31 @@ class TestValidation(unittest.TestCase):
         r = self._run("2000", "13", "16", "3", "30", "--gender", "female", "--lunar")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("农历月须为", r.stdout + r.stderr)
+
+    def test_build_chart_rejects_invalid_gender_with_value_error(self):
+        with self.assertRaisesRegex(ValueError, "性别"):
+            ziwei.build_chart(2000, 8, 16, 3, 30, "other")
+
+    def test_build_chart_raises_value_error_instead_of_system_exit(self):
+        invalid_cases = [
+            (100, 8, 16, 3, 30, "female", False),
+            (2000, 2, 30, 3, 30, "female", False),
+            (2000, 13, 16, 3, 30, "female", True),
+        ]
+        for y, mo, d, h, mi, gender, lunar in invalid_cases:
+            with self.subTest(y=y, mo=mo, d=d, lunar=lunar):
+                with self.assertRaises(ValueError):
+                    ziwei.build_chart(y, mo, d, h, mi, gender, lunar=lunar)
+
+
+class TestLeapMonth(unittest.TestCase):
+    def test_lunar_and_solar_inputs_preserve_leap_month(self):
+        lunar = ziwei.build_chart(2023, -2, 1, 12, 0, "male", lunar=True)
+        solar = ziwei.build_chart(2023, 3, 22, 12, 0, "male")
+        for chart in (lunar, solar):
+            self.assertEqual(chart["lunar"]["月"], 2)
+            self.assertTrue(chart["lunar"]["闰月"])
+            self.assertIn("闰2月", ziwei.render_text(chart))
 
 
 class TestCli(unittest.TestCase):

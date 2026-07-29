@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>我的一生 · 八字命书示例</title>
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
-<script>document.documentElement.classList.add('js');</script>
 <style>
 :root{
   --ink:#0c0b0e;
@@ -38,7 +38,6 @@
   --gutter:clamp(18px,4vw,40px);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
 body{
   font-family:var(--serif);
   background:var(--ink);
@@ -66,10 +65,6 @@ body::after{
 }
 .wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:0 var(--gutter)}
 
-/* reveal：无 JS 时正常显示；只动 transform/opacity，合成器友好 */
-.js .reveal{opacity:0;transform:translateY(26px);transition:opacity 1.05s cubic-bezier(.2,.7,.2,1),transform 1.05s cubic-bezier(.2,.7,.2,1)}
-.js .reveal.in{opacity:1;transform:none}
-
 /* ============ 卷首 Hero ============ */
 .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;padding:80px 30px 64px}
 /* 签名书脊：朱砂出血竖条 */
@@ -85,9 +80,7 @@ body::after{
   font-family:var(--brush);font-size:44px;color:var(--cinnabar-bright);
   box-shadow:0 0 34px rgba(187,66,50,.3);transform:rotate(-3deg);
 }
-/* 光晕呼吸只动 opacity（box-shadow 静态，不逐帧重绘） */
-.hero .seal::after{content:'';position:absolute;inset:-7px;border-radius:9px;box-shadow:0 0 30px rgba(187,66,50,.45);opacity:.45;animation:halo 5s ease-in-out infinite}
-@keyframes halo{0%,100%{opacity:.4}50%{opacity:.85}}
+.hero .seal::after{content:'';position:absolute;inset:-7px;border-radius:9px;box-shadow:0 0 30px rgba(187,66,50,.45);opacity:.45}
 .hero .pre{font-family:var(--kai);font-size:15px;letter-spacing:.5em;color:var(--gold);margin-bottom:24px;padding-left:.5em}
 .hero h1{font-family:var(--brush);font-size:clamp(78px,17vw,170px);font-weight:900;line-height:.92;color:var(--paper);text-shadow:0 0 56px rgba(217,115,51,.32);white-space:nowrap;letter-spacing:.04em}
 .hero .name{font-family:var(--kai);font-size:clamp(20px,4vw,28px);letter-spacing:.5em;color:var(--gold-bright);margin:30px 0 10px;padding-left:.5em}
@@ -114,6 +107,11 @@ p .water{color:var(--jade-bright);font-weight:500}
 strong{color:var(--gold-bright);font-weight:600}
 .lead{font-family:var(--kai);font-size:clamp(19px,2.6vw,23px);color:var(--paper);border-left:2px solid var(--cinnabar);padding-left:22px;margin-bottom:32px;line-height:1.95;text-wrap:balance}
 .note{font-size:14px;color:var(--paper-dim);font-style:italic;font-family:var(--serif)}
+
+/* 黑哥解读：每卷末尾把术语翻成短句人话 */
+.heige-read{margin-top:26px;padding:20px 22px 20px 24px;border-left:3px solid var(--cinnabar);background:rgba(187,66,50,.08);box-shadow:inset 0 0 0 1px rgba(187,66,50,.14)}
+.heige-read span{display:inline-block;font-family:var(--kai);font-size:13px;font-weight:600;letter-spacing:.16em;color:var(--paper);background:var(--cinnabar);border-radius:2px;padding:3px 10px}
+.heige-read p{margin:10px 0 0;font-size:15px;line-height:1.9;color:var(--paper-dim)}
 
 /* 依据标签 */
 .basis{display:inline-block;font-family:var(--num);font-size:12.5px;color:var(--jade-bright);background:rgba(94,132,120,.1);border:1px solid rgba(94,132,120,.28);border-radius:3px;padding:2px 10px;margin:0 2px;letter-spacing:.04em;white-space:nowrap;font-style:italic}
@@ -144,8 +142,7 @@ strong{color:var(--gold-bright);font-weight:600}
 .wx-name{font-family:var(--brush);font-size:32px;display:flex;align-items:center;gap:10px}
 .wx-name small{font-family:var(--num);font-size:15px;color:var(--paper-faint);font-style:italic}
 .wx-bar{height:14px;background:rgba(255,255,255,.04);border:1px solid var(--line-soft);border-radius:8px;overflow:hidden;position:relative}
-.wx-fill{height:100%;border-radius:8px;transform-origin:left;animation:grow 1.4s cubic-bezier(.2,.8,.2,1) both}
-@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.wx-fill{height:100%;border-radius:8px}
 .wx-val{font-family:var(--num);font-size:17px;color:var(--paper-dim);min-width:66px;text-align:right;font-style:italic}
 .f-fire{background:linear-gradient(90deg,#7a2018,var(--cinnabar),var(--fire))}
 .f-earth{background:linear-gradient(90deg,#6b5526,#caa46a)}
@@ -173,8 +170,7 @@ strong{color:var(--gold-bright);font-weight:600}
 .ember.e4{bottom:2%;right:14%}
 .ember.e5{top:43%;left:7%;font-size:clamp(30px,6vw,66px);opacity:.12}
 .sig-core{position:relative;display:flex;align-items:center;justify-content:center}
-.sig-core::before{content:'';position:absolute;width:130%;height:130%;left:-15%;top:-15%;border-radius:50%;background:radial-gradient(circle,rgba(63,107,134,.3),transparent 62%);z-index:0;animation:breathe 6s ease-in-out infinite}
-@keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+.sig-core::before{content:'';position:absolute;width:130%;height:130%;left:-15%;top:-15%;border-radius:50%;background:radial-gradient(circle,rgba(63,107,134,.3),transparent 62%);z-index:0}
 .sig-water{position:relative;z-index:2;font-family:var(--brush);font-size:clamp(190px,42vw,400px);line-height:1;color:var(--paper);text-shadow:0 0 42px rgba(94,147,179,.6),0 0 96px rgba(63,107,134,.34)}
 .sig-caption{text-align:center;max-width:560px;z-index:2;position:relative;margin-top:14px}
 .sig-zh{font-family:var(--brush);font-size:clamp(28px,5.4vw,44px);color:var(--gold-bright);letter-spacing:.14em;margin-bottom:12px}
@@ -253,11 +249,25 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
   .final{padding:40px 24px}
 }
 
-/* 尊重减少动效偏好：关掉一切动画与揭示，内容直显 */
-@media (prefers-reduced-motion:reduce){
-  .js .reveal{opacity:1!important;transform:none!important;transition:none}
-  *{animation:none!important}
-  html{scroll-behavior:auto}
+/* 打印态在不打印背景时保持正文清晰 */
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff!important;color:#111!important;font-size:11pt}
+  body *{color:#111!important;text-shadow:none!important}
+  body::before,body::after,.tiangan-deco,.scroll-cue{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .hero{min-height:auto;padding:24mm 12mm}
+  section{padding:12mm 0}
+  p,.lead,.note,.card .v,.step .desc,.yr .t,.av .v,.sig-caption p,footer .disc{color:#111!important}
+  .hero h1,.hero .verse,.sec-title,.chart .gan,.chart .zhi,.wx-name,.step .gz,.yr .gz,.final p,.final .bigline{color:#111!important;text-shadow:none!important}
+  .chart,.card,.av,.yr,.final,.heige-read{background:#fff!important;box-shadow:none!important}
+  .chart,.cards,.avoid,.final,.heige-read{border-color:#777!important}
+  .heige-read span{color:#111!important;background:#fff!important;border:1px solid #777}
+  .signature{min-height:auto;background:#fff!important}
+  .sig-water{color:#111!important;text-shadow:none!important}
+  .sig-core::before{display:none!important}
+  footer{margin-top:0;padding:4mm 0;break-inside:avoid}
+  a{color:#111!important;text-decoration:none}
 }
 
 /* ===== 字重层级：单一宋体骨架，靠字重 300→900 拉出主次 ===== */
@@ -297,6 +307,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
   <p class="lead reveal">这张八字，像一座生在正午、烧得正旺、却缺了一瓢水的火炉。</p>
   <p class="reveal">四柱八个字里，<span class="fire">五个是火</span>，木两个、金一个，<span class="em">水和土都没有现身</span>。把它想象成一个炉子，正午起火、火苗蹿得老高，旁边没有一桶水能浇，全靠已有的火在自己烧自己。</p>
   <p class="reveal">这一辈子的吉凶顺逆，核心就一句话：<strong>这座火炉太旺、太燥、缺水</strong>。读懂了这个画面，后面所有的结论都顺理成章。本篇所有断语，都从脚本精确排盘推出，每条都标注依据，孤证不立。</p>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>你可以先记住一幅画：炉子烧得太猛，降温的水没有跟上。后面讲性格、事业和岁运，都是在看什么时候又添火，什么时候能补进水和金。</p></div>
 </section>
 
 <!-- ============ 命盘全图 ============ -->
@@ -336,6 +347,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <span>大运 <b>6 岁顺行（虚岁）</b></span>
   </div>
   <p class="note reveal" style="margin-top:18px">注：本篇是「八字命理」skill 的可视化示例，采用一组<b style="color:var(--gold)">虚拟生辰</b>（公历 1986 年 6 月 22 日午时，男）演示完整推演与排版，命盘由脚本精确排定，断语为通用教学向，不对应任何真实个人。</p>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>四柱就是出生年、月、日、时的四组干支。日柱里的丁火代表你自己，其他十神、藏干和神煞都是围绕这个丁火说明关系与状态，不是额外多出几套命盘。</p></div>
 </section>
 
 <!-- ============ 五行能量 ============ -->
@@ -350,12 +362,13 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
   <p class="reveal">五行就是五种能量。下图按加权力量呈现盘中五行的强弱，一眼能看出问题所在：<span class="fire">火独大，水归零</span>。</p>
   <div class="wuxing reveal">
     <div class="wx-row"><div class="wx-name el-fire">火 <small>×5</small></div><div class="wx-bar"><div class="wx-fill f-fire" style="width:100%"></div></div><div class="wx-val">6.5　旺极</div></div>
-    <div class="wx-row"><div class="wx-name el-wood">木 <small>×2</small></div><div class="wx-bar"><div class="wx-fill f-wood" style="width:31%;animation-delay:.1s"></div></div><div class="wx-val">2.0</div></div>
-    <div class="wx-row"><div class="wx-name el-earth">土 <small>×0</small></div><div class="wx-bar"><div class="wx-fill f-earth" style="width:26%;animation-delay:.2s"></div></div><div class="wx-val">1.7　藏</div></div>
-    <div class="wx-row"><div class="wx-name el-metal">金 <small>×1</small></div><div class="wx-bar"><div class="wx-fill f-metal" style="width:15%;animation-delay:.3s"></div></div><div class="wx-val">1.0　弱</div></div>
-    <div class="wx-row"><div class="wx-name el-water">水 <small>×0</small></div><div class="wx-bar"><div class="wx-fill f-water" style="width:2%;animation-delay:.4s"></div></div><div class="wx-val"><span class="wx-empty">0　命门所缺</span></div></div>
+    <div class="wx-row"><div class="wx-name el-wood">木 <small>×2</small></div><div class="wx-bar"><div class="wx-fill f-wood" style="width:31%"></div></div><div class="wx-val">2.0</div></div>
+    <div class="wx-row"><div class="wx-name el-earth">土 <small>×0</small></div><div class="wx-bar"><div class="wx-fill f-earth" style="width:26%"></div></div><div class="wx-val">1.7　藏</div></div>
+    <div class="wx-row"><div class="wx-name el-metal">金 <small>×1</small></div><div class="wx-bar"><div class="wx-fill f-metal" style="width:15%"></div></div><div class="wx-val">1.0　弱</div></div>
+    <div class="wx-row"><div class="wx-name el-water">水 <small>×0</small></div><div class="wx-bar"><div class="wx-fill f-water" style="width:2%"></div></div><div class="wx-val"><span class="wx-empty">0　命门所缺</span></div></div>
   </div>
   <p class="reveal" style="margin-top:30px">同党（帮身的印比火木）占 <strong>76%</strong>，异党（耗身的食伤财官）占 24%。<span class="basis">同党 8.5 ｜ 异党 2.7</span> 火势压倒性独大，<strong>这是全盘第一根本：身旺极而水火失衡</strong>。</p>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>同党是给丁火加力的木和火，异党是让它泄力、花力的土金水。这里加力的一边明显更多，所以重点不是见到哪个字少就补哪个字，而是先让整体别再过热。</p></div>
 </section>
 
 <!-- ============ 旺衰 ============ -->
@@ -377,6 +390,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
   </div>
   <p class="reveal" style="margin-top:30px">四条全在猛烈助火。<strong>所以这把火旺到了极点</strong>，逼近单独成势的炎上格。全盘唯一降火的，是<span class="em">日主自坐的酉金（财星，且为长生）</span>，但孤金独水难敌满盘烈火。综合判为<span class="em">「身旺极」</span>，按常格论而不作纯炎上。<span class="basis">午月得令 + 月时双午为禄 + 两丙帮身 + 寅午半合火</span></p>
   <p class="reveal"><b>这意味着：</b>命主能量极强、主观能动性极强，谁也压不住。好处是行动力猛、有主见、扛得住事；短板是太满太冲，容易过头、容易燥。</p>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>得令是出生季节给你撑腰，通根是脚下有根，两丙一甲又继续添火加柴。四股力量叠在一起，意思就是你动力足、主见强，但容易用力过头。</p></div>
 </section>
 
 <!-- ============ 用神 ============ -->
@@ -397,6 +411,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <div class="card"><span class="tag">仇神</span><h4 class="el-wood"><i>木</i>印星</h4><div class="v">木是柴，扔进旺火里只会烧得更猛。缺木看似该补，其实<b>木来帮倒忙</b>，除非是带水的湿木。</div></div>
   </div>
   <p class="reveal" style="margin-top:30px">调候上，丁火生午月本取壬水为主、庚金为佐，恰与扶抑同向，真正的命门只有一个字：<span class="water">水</span>。<strong>记住八字趋吉总纲：多亲近水和金（黑蓝白、北方西方、流动性的东西），远离火和燥木（红色、南方、火爆的东西）。</strong></p>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>用神就是这张盘最需要的平衡力量，喜神是能帮上它的第二选择。这里水负责降温，金能生水，所以水排第一、金排第二，木火再来只会让炉子更热。</p></div>
 </section>
 
 </div>
@@ -433,6 +448,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
   <p class="reveal">月令午是丁火的禄地，这盘的格局叫<strong>建禄格</strong><span class="basis">月令午为丁之临官</span>。建禄格的人天生根气厚、独立性强，走的是<strong>靠自己的本事打拼、专业立身或自主创业</strong>这条路，靠组织庇荫、论资排辈那套不太适合。</p>
   <p class="reveal">身旺的建禄格，最喜财官食伤来泄耗，最忌印比再帮。这盘有个亮点也有个瑕疵：亮点是<span class="em">日主自坐酉金偏财、且为长生</span>，与财有缘、善经营；瑕疵是<span class="fire">财（酉金）藏而不透、官杀（水）原局全无、食伤（戊己土）也只藏不透</span>，等于一身好料卡在仓里没拿出来。所以格局定在<strong>中等待发</strong>：本事是真的，但要等金水大运把财官引出来，才能真正成事、攒下钱。</p>
   <p class="reveal">神煞也呼应这一点：<span class="em">将星</span>主威仪统御、<span class="em">文昌</span>主聪明文采、<span class="em">天乙月德</span>主贵人庇荫。<strong>这是一个有领导气、有文才、有贵人缘的命，欠的只是时机与那一瓢水。</strong></p>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>建禄格可以理解成自身底盘很足，更适合凭本事站住。财官藏而待运，意思是能力和机会没有同时摆到台面上，要等金水阶段把赚钱和事业秩序接进来。</p></div>
 </section>
 
 <!-- ============ 大运 ============ -->
@@ -480,6 +496,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     </div>
   </div>
   <p class="reveal" style="margin-top:24px"><strong>一句话记住这盘的人生节奏：早年（6 到 35）木火起步、财根渐进、26 后小成；36 到 45 戊戌火局是最大一坎（守、稳、护身体）；46 岁后己亥庚子辛丑金水连珠三十年才真正回甘大发，是典型的晚发命。</strong></p>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>大运像每十年换一次大环境。木火阶段继续加热，需要稳住；金水阶段能降温并补上财官，所以这张盘的节奏是先积累，中段谨慎，后段转顺。</p></div>
 </section>
 
 <!-- ============ 流年 ============ -->
@@ -504,6 +521,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <div class="yr warn"><span class="dot">慎</span><span class="y">2034</span><span class="gz">甲寅</span><div class="t">甲印透、寅木引动寅午半合火，木火齐助旺。<b>破财与健康警戒年，宜守。</b></div></div>
     <div class="yr warn"><span class="dot">慎</span><span class="y">2035</span><span class="gz">乙卯</span><div class="t">乙卯木（偏印）生火为仇、卯午相破。注意情绪与健康，宜守不宜动。</div></div>
   </div>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>流年是十年大环境里的年度天气。红色年份表示火木把原有失衡放大，青色年份表示金水进场缓和；它讲的是当年更该守还是更适合推进，不是保证具体事件必然发生。</p></div>
 </section>
 
 <!-- ============ 分维度详断 ============ -->
@@ -520,18 +538,21 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <div class="divider"><span>性 格</span></div>
     <p style="margin-top:24px">底色是<strong>热情、聪明、好强、有才，但容易急</strong>。丁火主礼，本性温暖、重感情、讲义气、爱面子。丁火是灯烛之火（区别于丙火的大太阳），所以<span class="em">外表随和，内里有股不服输的硬劲</span>。</p>
     <p>正印甲木透出、又坐文昌，<b style="color:var(--gold-bright)">聪明、有文采、悟性好、学东西快</b>。<span class="basis">正印透 + 文昌将星</span> 将星加身又添一份威仪与统御气，天生有领导相。短板在「冲」：火太旺缺水，情绪起落大、急性子、自尊心强，有时仗着有才得罪人。<strong>修身养性、把火气压一压，命会顺很多。</strong></p>
+    <div class="heige-read reveal"><span>黑哥解读</span><p>正印和文昌说的是学习、理解与表达能力，将星说的是主导感。合起来就是你学得快、敢负责，火太旺的副作用是容易着急，先放慢反应会更稳。</p></div>
   </div>
 
   <div class="reveal" style="margin-bottom:48px">
     <div class="divider"><span>事 业</span></div>
     <p style="margin-top:24px">结论：<strong>靠自身本事打拼、做主导，方向选水、金类，晚运才是真正的发达期。</strong>建禄格身旺喜泄耗，适合独立创业、专业立身、智慧型工作（食伤泄秀），靠组织论资排辈那套不适合。</p>
     <p>日坐酉金偏财、与财有缘，加上将星的统御气，适合<b style="color:var(--gold-bright)">当核心、自己主导</b>。<span class="fire">天干两丙劫财、争利的同辈多</span>，纯合伙容易起争抢，要合伙就把分工股权划清。行业按用神取：<b style="color:var(--jade-bright)">金融、贸易、流通、物流、数据互联网、水产、五金机械（属金水）</b>为佳；避开能源、电力、餐饮、光电这些纯火行业。方向往<strong>北方、西方</strong>更顺。财官待运，<strong>46 岁后金水大运到位，才是事业真正起飞的三十年。</strong></p>
+    <div class="heige-read reveal"><span>黑哥解读</span><p>食伤泄秀就是把旺盛精力变成作品和能力，财官到位就是赚钱机会与事业规则同时清楚。你更适合靠专业和主导权做事，合作时把分工与利益提前写明。</p></div>
   </div>
 
   <div class="reveal" style="margin-bottom:48px">
     <div class="divider"><span>财 运</span></div>
     <p style="margin-top:24px">结论：<strong>有财缘、能任财，但火旺年守不住，核心是钱被兄弟分、被火烧。</strong>日主自坐酉金偏财、财星坐长生，比一般火炎命的「财弱被劫」要好，<b style="color:var(--gold-bright)">本身善经营、能驾驭财</b>；只是比劫旺（两丙加建禄），仍有「群劫争财」的隐患。</p>
     <p>得财靠两条路：一是<b style="color:var(--gold-bright)">凭才华手艺与智慧挣</b>（食伤生财），二是<b style="color:var(--jade-bright)">走金水的运和年份</b>（己酉、辛亥、癸丑等年，以及 46 岁后己亥庚子辛丑三步大运）。最忌在火旺年破耗（2026、2030，以及戊戌火局运）。<strong>理财宜稳、不投机、不冒进合伙</strong>，对这种命型，守住比赚到更重要。</p>
+    <div class="heige-read reveal"><span>黑哥解读</span><p>财星坐在日支，表示盘里有经营和承接财富的基础。比劫旺则像同桌分一块蛋糕的人多，所以赚钱靠能力，守钱靠边界，合伙和担保尤其要清楚。</p></div>
   </div>
 
   <div class="reveal" style="margin-bottom:48px">
@@ -539,18 +560,21 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <p style="margin-top:24px">坦白说，这盘的感情<strong>有亮点也有功课</strong>：配偶宫坐妻星是好底子，但桃花旺、比劫旺需要专一经营。</p>
     <p>男命以财为妻。亮点是<span class="water">日支酉金正是妻星、且坐长生</span><span class="basis">妻星坐妻宫</span>，主夫妻有缘、配偶得力。功课在三处：其一，<span class="fire">两丙劫财旺</span>，群劫既争财也争妻，易有竞争；其二，月时两午皆带<span class="fire">桃花</span>、将星桃花并见，异性缘旺、易生牵扯；其三，火旺缺水，性子急需对方降火。</p>
     <p><b>实操建议：</b>宜<strong>晚婚</strong>（火气最旺的年轻时结婚最易出问题）；找<b style="color:var(--jade-bright)">性格柔和、属水或属金的另一半</b>（北方、西方人），能给降火；桃花旺者贵在专一。留意逢冲合婚姻宫之年（卯年冲酉、辰年合酉）感情有变动，提前经营。</p>
+    <div class="heige-read reveal"><span>黑哥解读</span><p>妻星坐妻宫说的是伴侣关系有落点，桃花和比劫旺说的是外界牵扯与竞争感也强。人话就是有缘分基础，更需要专一、慢一点沟通，并把关系边界守清楚。</p></div>
   </div>
 
   <div class="reveal" style="margin-bottom:48px">
     <div class="divider"><span>健 康</span></div>
     <p style="margin-top:24px">结论：<strong>火太旺水太枯，首要护心脏、血压、眼睛和睡眠。</strong></p>
     <p>五行配脏腑，这盘<span class="fire">火过旺、水枯竭</span>：第一隐患是<b style="color:var(--cinnabar-bright)">心脏、血压、血液、眼目、神经睡眠</b>（火主心血神志，易高血压、心慌、上火、失眠、眼干）；第二隐患是<b>肾、泌尿、骨</b>（水太弱，先天偏虚）；火土燥也要留意肠胃、咽喉。高发在火旺的运和年，<strong>尤其 36 到 45 那步戊戌火局运，和丙午、丁未等火年</strong>。养生方向就一个字：<span class="water">水</span>。多喝水、多近水（游泳特别合）、饮食降火、作息别熬、把情绪和火气压下来，这是治本。</p>
+    <div class="heige-read reveal"><span>黑哥解读</span><p>五行配脏腑是传统命理的类比，不是医学诊断。这里的白话提醒是少熬夜、少燥热、重视睡眠和心血管常规检查；真有不适，以医生意见为准。</p></div>
   </div>
 
   <div class="reveal" style="margin-bottom:48px">
     <div class="divider"><span>学 业 · 才 华</span></div>
     <p style="margin-top:24px">结论：<strong>聪明有文采，正印加文昌，走的是正统学习与考试缘的路线。</strong>正印甲木透月干、生身有力，又坐文昌贵人，<b style="color:var(--gold-bright)">学习力强、有靠山式的循序学习、考运不弱</b>。</p>
     <p><span class="basis">正印透 + 文昌 + 将星</span> 这组合让其<strong>适合走文化、文职、管理、专业技术</strong>的正规路线，配上将星的统御气，利于在组织或专业里担纲领头。与那种「伤官自学、钻研冷门」的才华命型不同，这盘更偏正印文昌的稳健学习路。</p>
+    <div class="heige-read reveal"><span>黑哥解读</span><p>正印偏向按体系学习，文昌偏向理解与表达，将星偏向把事情带起来。这组词翻成人话，就是你适合系统学一门专业，再把所学用于管理、表达或技术工作。</p></div>
   </div>
 
   <div class="reveal">
@@ -559,6 +583,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <p><b style="color:var(--gold-bright)">兄弟朋友：</b>比劫极旺（两丙加建禄），<strong>同辈手足缘旺、朋友不少</strong>，<span class="fire">但极易因钱起争抢</span>，合伙担保尤其要防。</p>
     <p><b style="color:var(--gold-bright)">配偶：</b>日坐妻星酉金长生，夫妻有缘、配偶得力，唯桃花比劫旺，贵在专一经营。</p>
     <p><b style="color:var(--gold-bright)">子女：</b>男命以官杀（水）为子。原局官杀不现，<strong>子女缘要靠走水运的中晚年（己亥、庚子等运）接上</strong>。时坐午火劫财，主与子女各有主见、相处宜给空间。</p>
+    <div class="heige-read reveal"><span>黑哥解读</span><p>六亲是把十神落到家人关系上看。这里长辈支持和朋友缘较明显，涉及同辈钱财要留边界；伴侣与子女部分讲的是相处倾向，现实关系仍要靠沟通和共同经历验证。</p></div>
   </div>
 </section>
 
@@ -581,6 +606,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <div class="av"><div class="k">婚姻</div><div class="v">晚婚、找柔和的水金型伴侣、专一经营、留空间</div></div>
     <div class="av"><div class="k">关键坎</div><div class="v"><span class="no">36 – 45 岁戊戌火局运</span>：护心血管、守财不冒进、压脾气、避合伙纠纷与口舌</div></div>
   </div>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>趋避不是改命法术，是把前面的喜忌翻成生活选择。对这张盘来说，工作方向、理财和合作都优先选稳、冷静、有规则的做法，火旺阶段更要控制冲动。</p></div>
   <p class="reveal" style="margin-top:32px;font-family:var(--kai);color:var(--gold-bright);letter-spacing:.1em;font-size:16px">色彩服饰 · 借色调候<span style="color:var(--paper-dim);font-size:13px;letter-spacing:.04em">　按用神「水」定制 · 以颜色为主轴 · 参考非转运</span></p>
   <div class="avoid reveal" style="margin-top:8px">
     <div class="av"><div class="k">主色</div><div class="v"><span class="yes">宜 黑、蓝、灰、白（水金冷色）做衣着主色</span>　<span class="no">忌 大红大紫大橙堆叠</span></div></div>
@@ -590,6 +616,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <div class="av"><div class="k">环境</div><div class="v">居家办公<span class="yes">冷白光、蓝灰主调、近水景镜面</span>；避大面积暖红灯光与曝晒</div></div>
     <div class="av"><div class="k">口径</div><div class="v">以冷色为主轴，宝石按呈现的颜色取水属性，<b style="color:var(--gold-bright)">审美与场合优先</b>，不承诺转运</div></div>
   </div>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>借色调候就是把水金的冷色感放进穿搭和环境。黑、蓝、灰、白方便长期使用，宝石只按颜色做审美参考，不代表戴上就能改变现实结果。</p></div>
   <p class="reveal" style="margin-top:32px;font-family:var(--kai);color:var(--gold-bright);letter-spacing:.1em;font-size:16px">养生调养 · 顺时调息<span style="color:var(--paper-dim);font-size:13px;letter-spacing:.04em">　按用神「水」定制 · 参考非医嘱</span></p>
   <div class="avoid reveal" style="margin-top:8px">
     <div class="av"><div class="k">体质</div><div class="v"><span class="fire">火炎燥热</span>（满盘火、独缺水），大方向<span class="water">清润降火、滋阴养水</span></div></div>
@@ -599,6 +626,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <div class="av"><div class="k">运动</div><div class="v"><span class="yes">游泳最合</span>（属水又静心），辅以温和有氧；<span class="no">忌烈日暴晒、过激耗心</span></div></div>
     <div class="av"><div class="k">脏腑</div><div class="v">先护<b style="color:var(--cinnabar-bright)">心血管与睡眠</b>（火亢），兼养<b style="color:var(--water-bright)">肾水</b>（先天偏虚）</div></div>
   </div>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>顺时调息说白了就是减少熬夜、暴晒和过度刺激，多补水、做温和运动、给情绪降速。这些是生活方式参考，不替代体检、诊断或治疗。</p></div>
 </section>
 
 <!-- ============ 总评 ============ -->
@@ -610,6 +638,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     <div class="eight">趋吉就八个字：</div>
     <div class="bigline" style="color:var(--fire)">走金水 · 向北西<br>凭才学 · 守住财<br>缓婚姻 · 降火气</div>
   </div>
+  <div class="heige-read reveal"><span>黑哥解读</span><p>整张盘的核心没有变：你本身动力和能力都够，真正需要的是降速、守边界，并等金水阶段把事业与财富的条件补齐。命理给的是观察角度，现实选择仍以事实和专业意见为准。</p></div>
 </section>
 
 </div>
@@ -619,14 +648,8 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
   <p class="disc">本报告是传统文化研究与自我认知参考，非预言或保证，不承诺改运消灾。命理讲的是倾向与概率，真碰上结婚、健康、大笔投资这类大事，请把它当一个参考维度，最终结合现实理性拍板。本盘采用虚拟生辰，由精确排盘脚本推算，方法论遵循「先定旺衰用神、再断一切」，每条断语皆标依据，孤证不立。</p>
   <div class="sig-stamp">八字一卷 · 示例</div>
   <div class="date">八字命理 SKILL · 可视化示例</div>
-  <div class="date">排盘引擎 v1.3.0</div>
+  <div class="date">排盘引擎 v1.4.0</div>
 </footer>
 
-<script>
-const io=new IntersectionObserver((es)=>{
-  es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
-},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-</script>
 </body>
 </html>
