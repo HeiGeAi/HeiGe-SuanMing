@@ -11,9 +11,11 @@ meihua.py 回归测试 · HeiGe-SuanMing / bazi-mingli skill
   python3 -m unittest discover -s tests   # 连同 test_paipan 一起跑
 """
 
+import json
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SCRIPTS = os.path.join(os.path.dirname(_HERE), "scripts")
@@ -229,6 +231,49 @@ class TestZiSectV101(unittest.TestCase):
         a = meihua.qigua_by_time(2026, 7, 4, 14, 30)
         b = meihua.qigua_by_time(2026, 7, 4, 14, 30, zi_sect=1)
         self.assertEqual(a["本卦"]["名"], b["本卦"]["名"])
+
+
+class TestAuditFixesV110(unittest.TestCase):
+    """v1.1.0：农历晚子、闰月身份、核心异常与 JSON 所占。"""
+
+    def _run(self, *extra):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "meihua.py")
+        return subprocess.run([sys.executable, script, *extra], capture_output=True, text=True)
+
+    def test_lunar_sect1_advances_to_next_lunar_day(self):
+        actual = meihua.qigua_by_time(2026, 5, 20, 23, 30, lunar=True, zi_sect=1)
+        expected = meihua.qigua_by_time(2026, 5, 21, 23, 30, lunar=True, zi_sect=2)
+        self.assertEqual(actual["本卦"]["名"], expected["本卦"]["名"])
+        self.assertEqual(actual["起卦"]["动爻"], expected["起卦"]["动爻"])
+        self.assertIn("晚子归次日", actual["起卦法"])
+        self.assertIn("21日", actual["起卦法"].replace(" ", ""))
+
+    def test_lunar_sect1_crosses_month_via_calendar(self):
+        actual = meihua.qigua_by_time(2026, 5, 29, 23, 30, lunar=True, zi_sect=1)
+        self.assertIn("6月1日", actual["起卦法"].replace(" ", ""))
+
+    def test_leap_month_marker_is_preserved(self):
+        chart = meihua.qigua_by_time(2025, -6, 1, 12, 0, lunar=True)
+        self.assertIn("闰6月", chart["起卦法"].replace(" ", ""))
+
+    def test_invalid_zi_sect_is_value_error(self):
+        with self.assertRaises(ValueError):
+            meihua.qigua_by_time(2026, 5, 20, 23, 30, lunar=True, zi_sect=3)
+
+    def test_core_invalid_date_is_value_error(self):
+        with self.assertRaises(ValueError):
+            meihua.qigua_by_time(2026, 2, 30, 12, 0)
+
+    def test_missing_dependency_is_runtime_error(self):
+        with patch.dict(sys.modules, {"lunar_python": None}):
+            with self.assertRaises(RuntimeError):
+                meihua.qigua_by_time(2026, 5, 20, 12, 0)
+
+    def test_json_keeps_query(self):
+        r = self._run("--numbers", "34", "43", "--query", "问近期求职", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["query"], "问近期求职")
 
 
 if __name__ == "__main__":

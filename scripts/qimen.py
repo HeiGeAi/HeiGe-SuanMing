@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-qimen.py：时家奇门遁甲排局引擎（转盘 · 拆补法）。
+qimen.py：时家奇门遁甲排局引擎 v1.2（转盘）。
 
-定位：本库第六个引擎、第三个占测引擎（梅花、六爻之后）。只做「排局层」：
+定位：本库第五个引擎、第三个占测引擎（梅花、六爻之后）。只做「排局层」：
 定局（阴阳遁+局数+三元）→ 地盘三奇六仪 → 旬首值符值使 → 天盘九星 →
 八门 → 八神 → 附加标注（旬空/驿马/伏吟反吟）。断局方法论见 references/21。
 
 流派口径（与 references/21 一致，全部有双源依据）：
-- 排局法：拆补法（无状态、现代软件事实主流）。置闰法（超神接气）有历史
-  状态且开源实现普遍有 bug，本版不实现，文档如实记录两法分歧。
+- 排局法：拆补法（默认）与置闰法（超神接气）均支持；置闰阈值两派可选。
 - 盘式：转盘（主流）。飞盘不做。
 - 子时：默认 23 点换日（时家主流，lunar_python 需显式 setSect(1)），
   --zi-sect 2 可选夜子时不换日。
@@ -27,7 +26,7 @@ import json
 import os
 import sys
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
@@ -167,6 +166,14 @@ SANQI_SHENGDIAN = {"乙": 3, "丙": 9, "丁": 7}
 # 干支与节气（底座：lunar_python，含两个已实测的工程坑的兜底）
 # ============================================================
 
+def _solar_class():
+    try:
+        from lunar_python import Solar
+    except ImportError as e:
+        raise RuntimeError("缺少依赖 lunar_python，请先运行：pip3 install lunar_python") from e
+    return Solar
+
+
 def _ganzhi_index(gz):
     """干支 → 六十甲子序号（甲子=0…癸亥=59）。"""
     g, z = GAN_IDX[gz[0]], ZHI_IDX[gz[1]]
@@ -192,7 +199,7 @@ def get_pillars(y, mo, d, h, mi, zi_sect=1):
     ⚠️ lunar_python 的 EightChar 默认 sect=2（夜子时日柱用当天），与时家
     奇门主流相反，必须显式 setSect；此坑已实测确认（references/21）。
     """
-    from lunar_python import Solar
+    Solar = _solar_class()
     ec = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar().getEightChar()
     ec.setSect(zi_sect)
     return {
@@ -208,7 +215,7 @@ def get_jieqi(y, mo, d, h, mi):
     时刻未到也返回新节气。必须再取精确交气时刻比较，未到则回退上一节气。
     此坑已实测确认（2025-12-21 00:30 即返回冬至，实际 23:03:05 才交气）。
     """
-    from lunar_python import Solar
+    Solar = _solar_class()
     now = datetime.datetime(y, mo, d, h, mi)
     jq = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar().getPrevJieQi(True)
     s = jq.getSolar()
@@ -239,7 +246,7 @@ def _solstice_day(year, name):
     ⚠️ lunar_python 的 JieQiTable 以农历年为界：公历 Y 年 12 月的冬至要用
     fromYmd(Y+1,6,1) 查；异常不吞（吞掉会致符头链锚错位，终审钉过此坑）。
     """
-    from lunar_python import Solar
+    Solar = _solar_class()
     q = year + 1 if name == "冬至" else year
     s = Solar.fromYmd(q, 6, 1).getLunar().getJieQiTable()[name]
     d = datetime.date(s.getYear(), s.getMonth(), s.getDay())
@@ -324,6 +331,10 @@ def ding_ju(jieqi_name, day_gz):
 def di_pan(dun, ju):
     """地盘三奇六仪：宫号 → 干。gong(i) = ((ju-1 + s*i) mod 9) + 1，
     ORDER 下标 i=0..8，阳遁 s=+1、阴遁 s=-1；中五宫正常落干。"""
+    if dun not in ("阳", "阴"):
+        raise ValueError(f"遁须为阳或阴：{dun}")
+    if not isinstance(ju, int) or not 1 <= ju <= 9:
+        raise ValueError(f"局数须为 1-9：{ju}")
     s = 1 if dun == "阳" else -1
     pan = {}
     for i, gan in enumerate(ORDER):
@@ -490,19 +501,19 @@ def build_pan(y, mo, d, h, mi, zi_sect=1, ju_fa="chaibu", leap_min=8):
     """排一局完整时家转盘奇门。返回结构化 dict。ju_fa: chaibu 拆补（默认）/ zhirun 置闰。"""
     # 输入校验（引擎侧全兜底，勿信上游库的宽松校验）
     if not (YEAR_MIN <= y <= YEAR_MAX):
-        sys.exit(f"年份超出支持范围（{YEAR_MIN}-{YEAR_MAX}）：{y}")
+        raise ValueError(f"年份超出支持范围（{YEAR_MIN}-{YEAR_MAX}）：{y}")
     try:
         datetime.datetime(y, mo, d, h, mi)
     except ValueError as e:
-        sys.exit(f"非法日期时间：{y}-{mo}-{d} {h}:{mi}（{e}）")
+        raise ValueError(f"非法日期时间：{y}-{mo}-{d} {h}:{mi}（{e}）") from e
     if not (0 <= h <= 23):
-        sys.exit(f"小时须在 0-23 之间：{h}")
+        raise ValueError(f"小时须在 0-23 之间：{h}")
     if zi_sect not in (1, 2):
-        sys.exit(f"--zi-sect 只能为 1（23点换日，默认）或 2（夜子时不换日）：{zi_sect}")
+        raise ValueError(f"--zi-sect 只能为 1（23点换日，默认）或 2（夜子时不换日）：{zi_sect}")
     if ju_fa not in ("chaibu", "zhirun"):
-        sys.exit(f"--ju-fa 只能为 chaibu（拆补，默认）或 zhirun（置闰）：{ju_fa}")
+        raise ValueError(f"--ju-fa 只能为 chaibu（拆补，默认）或 zhirun（置闰）：{ju_fa}")
     if leap_min not in (8, 9):
-        sys.exit(f"--zhirun-leap-min 只能为 8（含头尾满九天即闰，默认）或 9（古籍派）：{leap_min}")
+        raise ValueError(f"--zhirun-leap-min 只能为 8（含头尾满九天即闰，默认）或 9（古籍派）：{leap_min}")
 
     pillars = get_pillars(y, mo, d, h, mi, zi_sect)
     jieqi_name, jieqi_time = get_jieqi(y, mo, d, h, mi)
@@ -531,8 +542,12 @@ def build_pan(y, mo, d, h, mi, zi_sect=1, ju_fa="chaibu", leap_min=8):
     kong_gongs = sorted({ZHI_GONG[z] for z in hour_kong})
     ma_zhi = YIMA[pillars["时柱"][1]]
     ma_gong = ZHI_GONG[ma_zhi]
-    fuyin = tp["星steps"] == 0
-    fanyin = tp["星steps"] == 4
+    star_fuyin = tp["星steps"] == 0
+    star_fanyin = tp["星steps"] == 4
+    door_fuyin = tp["门steps"] == 0
+    door_fanyin = tp["门steps"] == 4
+    fuyin = star_fuyin or door_fuyin
+    fanyin = star_fanyin or door_fanyin
 
     gongs = {}
     for gong in range(1, 10):
@@ -585,6 +600,8 @@ def build_pan(y, mo, d, h, mi, zi_sect=1, ju_fa="chaibu", leap_min=8):
         "旬空": {"日柱空": day_kong, "时柱空": hour_kong},
         "驿马": {"支": ma_zhi, "宫": ma_gong},
         "伏吟": fuyin, "反吟": fanyin,
+        "星伏吟": star_fuyin, "星反吟": star_fanyin,
+        "门伏吟": door_fuyin, "门反吟": door_fanyin,
         "星steps": tp["星steps"], "门steps": tp["门steps"],
         "九宫": gongs,
     }
@@ -628,10 +645,10 @@ def render_text(pan):
                  f"{pan['值符']['落宫']}宫　值使：{pan['值使']['门']} "
                  f"落{GONG_INFO[pan['值使']['落宫']][0]}{pan['值使']['落宫']}宫")
     extra = []
-    if pan["伏吟"]:
-        extra.append("全盘星伏吟")
-    if pan["反吟"]:
-        extra.append("全盘星反吟")
+    for key, label in (("星伏吟", "星伏吟"), ("星反吟", "星反吟"),
+                       ("门伏吟", "门伏吟"), ("门反吟", "门反吟")):
+        if pan.get(key):
+            extra.append(label)
     lines.append(f"旬空：日空 {pan['旬空']['日柱空']}　时空 {pan['旬空']['时柱空']}"
                  f"　驿马：{pan['驿马']['支']}（{GONG_INFO[pan['驿马']['宫']][0]}"
                  f"{pan['驿马']['宫']}宫）" + ("　" + "·".join(extra) if extra else ""))
@@ -687,8 +704,11 @@ def main():
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"qimen.py v{__version__}")
     a = ap.parse_args()
-    pan = build_pan(a.year, a.month, a.day, a.hour, a.minute, a.zi_sect,
-                    a.ju_fa, a.zhirun_leap_min)
+    try:
+        pan = build_pan(a.year, a.month, a.day, a.hour, a.minute, a.zi_sect,
+                        a.ju_fa, a.zhirun_leap_min)
+    except (ValueError, RuntimeError) as e:
+        ap.error(str(e))
     if a.json:
         print(json.dumps(pan, ensure_ascii=False, indent=2))
     else:

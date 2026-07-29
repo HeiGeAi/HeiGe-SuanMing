@@ -18,6 +18,8 @@ paipan.py 回归测试 · HeiGe-SuanMing / bazi-mingli skill
 """
 
 import argparse
+from datetime import datetime, timezone
+import json
 import os
 import sys
 import unittest
@@ -30,12 +32,14 @@ sys.path.insert(0, _SCRIPTS)
 import paipan  # noqa: E402
 
 
-def make_args(year, month, day, hour, minute, gender="male",
-              lunar=False, lng=None, tz=8.0, zi_sect=None, years=None):
+def make_args(year, month, day, hour=None, minute=0, gender="male",
+              lunar=False, lng=None, tz=8.0, zi_sect=None, years=None,
+              china_dst=False):
     """构造 build_chart 所需的 argparse.Namespace。"""
     return argparse.Namespace(
         year=year, month=month, day=day, hour=hour, minute=minute,
         gender=gender, lunar=lunar, lng=lng, tz=tz, zi_sect=zi_sect, years=years,
+        china_dst=china_dst,
     )
 
 
@@ -741,7 +745,8 @@ class TestDstNote(unittest.TestCase):
         self.assertIn("夏令时", n)
 
     def test_window_start_boundary(self):
-        self.assertIsNotNone(paipan.china_dst_note(1988, 4, 10))
+        self.assertIsNone(paipan.china_dst_note(1988, 4, 10))
+        self.assertIsNotNone(paipan.china_dst_note(1988, 4, 17))
 
     def test_out_of_window_month(self):
         self.assertIsNone(paipan.china_dst_note(1988, 2, 1))
@@ -872,7 +877,7 @@ class TestPartnerValidation(unittest.TestCase):
     def test_partner_dst_note_passthrough(self):
         # B8：乙方生于夏令时期须提示
         r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
-                      "--partner", "1988", "7", "1", "10")
+                      "--partner", "1988", "7", "1", "10", "--partner-china-dst")
         self.assertEqual(r.returncode, 0)
         self.assertIn("乙方夏令时", r.stdout)
 
@@ -924,6 +929,12 @@ class TestDstBoundaryV131(unittest.TestCase):
         n = paipan.china_dst_note(1986, 9, 14)
         self.assertIn("结束日", n)
         self.assertIn("回拨", n)
+        self.assertIn("00:00至00:59", n)
+        self.assertIn("01:00至01:59重复出现", n)
+        self.assertIn("第一次为夏令时需减 1 小时", n)
+        self.assertIn("第二次为标准时不调整", n)
+        self.assertIn("02:00 后为标准时不调整", n)
+        self.assertNotIn("2 时前所记钟表时间应减 1 小时", n)
 
     def test_mid_window_wording(self):
         n = paipan.china_dst_note(1988, 7, 1)
@@ -940,6 +951,191 @@ class TestTargetDateBoundaryV131(unittest.TestCase):
     def test_normal_day_no_note(self):
         td = paipan.target_date_analysis(2024, 2, 20, "丁", ["午"])
         self.assertNotIn("边界提示", td)
+
+
+# ============================================================
+# v1.4.0 全面审计修复回归
+# ============================================================
+class TestAuditTrueSolarBoundary(unittest.TestCase):
+    def test_true_solar_does_not_move_solar_term_boundary(self):
+        c = paipan.build_chart(make_args(2024, 2, 4, 16, 45, "male", lng=104.1, tz=8.0))
+        self.assertEqual(c["pillars"]["年"], "甲辰")
+        self.assertEqual(c["pillars"]["月"], "丙寅")
+        self.assertEqual(c["yun_direction"], "顺排")
+        self.assertEqual(c["pillars"]["时"][1], "申")
+        self.assertEqual(c["minggong"], "辛未")
+        self.assertEqual(c["shengong"], "乙亥")
+
+    def test_overseas_timezone_uses_same_lichun_instant(self):
+        before = paipan.build_chart(make_args(2024, 2, 4, 3, 0, "male", lng=-74, tz=-5))
+        after = paipan.build_chart(make_args(2024, 2, 4, 3, 45, "male", lng=-74, tz=-5))
+        self.assertEqual((before["pillars"]["年"], before["pillars"]["月"]), ("癸卯", "乙丑"))
+        self.assertEqual((after["pillars"]["年"], after["pillars"]["月"]), ("甲辰", "丙寅"))
+
+
+class TestAuditUnknownHour(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.script = os.path.join(_SCRIPTS, "paipan.py")
+
+    def test_three_pillar_cli_has_no_fabricated_hour(self):
+        import json
+        import subprocess
+        r = subprocess.run(
+            [sys.executable, self.script, "1990", "5", "15", "--gender", "male", "--json"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        c = json.loads(r.stdout)
+        self.assertEqual(list(c["pillars"]), ["年", "月", "日"])
+        self.assertFalse(c["input"]["hour_known"])
+        self.assertIsNone(c["start_age"])
+        self.assertIsNone(c["start_solar"])
+        self.assertEqual(c["dayun"], [])
+
+    def test_three_pillar_text_states_limits(self):
+        c = paipan.build_chart(make_args(1990, 5, 15))
+        text = paipan.render_text(c)
+        self.assertIn("【三柱】", text)
+        self.assertIn("时辰未知", text)
+        self.assertIn("不输出精确起运", text)
+        self.assertNotIn("时", c["pillars"])
+
+    def test_unknown_hour_on_term_day_marks_pillars_uncertain(self):
+        c = paipan.build_chart(make_args(2024, 2, 4))
+        self.assertEqual(c["input"]["pillar_time_basis"], "当日正午参考值")
+        self.assertEqual(c["input"]["pillar_uncertainty"]["年"], ["癸卯", "甲辰"])
+        self.assertEqual(c["input"]["pillar_uncertainty"]["月"], ["乙丑", "丙寅"])
+        self.assertIn("当日交节", c["input"]["limitations"])
+        self.assertIn("正午参考值", paipan.render_text(c))
+
+    def test_unknown_hour_rejects_true_solar_options(self):
+        with self.assertRaisesRegex(ValueError, "时辰未知"):
+            paipan.build_chart(make_args(1990, 5, 15, lng=113.3))
+
+
+class TestAuditTimeAndYearBoundaries(unittest.TestCase):
+    def test_beijing_now_converts_from_utc_instant(self):
+        utc = datetime(2024, 2, 4, 8, 30, tzinfo=timezone.utc)
+        self.assertEqual(paipan._beijing_now(utc), datetime(2024, 2, 4, 16, 30))
+
+    def test_target_date_detects_term_before_0030(self):
+        td = paipan.target_date_analysis(1902, 6, 7, "丁", ["午"])
+        self.assertIn("边界提示", td)
+
+    def test_non_finite_and_out_of_range_timezone_rejected(self):
+        for tz in (float("nan"), float("inf"), -13, 15):
+            with self.subTest(tz=tz), self.assertRaisesRegex(ValueError, "时区"):
+                paipan.build_chart(make_args(1990, 5, 15, 12, 0, tz=tz))
+
+    def test_true_solar_correction_cannot_escape_supported_years(self):
+        with self.assertRaisesRegex(ValueError, "校正后.*年份"):
+            paipan.build_chart(make_args(1600, 1, 1, 0, 0, lng=-180, tz=8))
+
+    def test_lunar_conversion_cannot_escape_supported_years(self):
+        with self.assertRaisesRegex(ValueError, "转换后.*年份"):
+            paipan.build_chart(make_args(2200, 12, 29, 12, 0, lunar=True))
+
+    def test_future_birth_default_liunian_has_no_negative_age(self):
+        c = paipan.build_chart(make_args(2050, 12, 31, 12, 0))
+        self.assertGreaterEqual(c["liunian"][0]["year"], 2050)
+        self.assertTrue(all(item["age"] >= 1 for item in c["liunian"]))
+
+    def test_overseas_dayun_uses_birthplace_civil_year_and_date(self):
+        c = paipan.build_chart(make_args(2000, 1, 1, 0, 30, lng=170, tz=14,
+                                          years=(2007, 1)))
+        first = next(item for item in c["dayun"] if item["ganzhi"])
+        self.assertEqual(8, c["start_age"])
+        self.assertEqual("2007-12-11", c["start_solar"])
+        self.assertEqual(8, first["start_age"])
+        self.assertEqual(8, c["liunian"][0]["age"])
+
+    def test_reusable_api_rejects_non_positive_year_span(self):
+        for span in (0, -1):
+            with self.subTest(span=span), self.assertRaisesRegex(ValueError, "年数"):
+                paipan.build_chart(make_args(1990, 5, 15, 12, 0, years=(2024, span)))
+        for years in ((2024,), (2024, 1, 2), ("2024", 1), (2024, 1.5), (True, 1)):
+            with self.subTest(years=years), self.assertRaisesRegex(ValueError, "--years"):
+                paipan.build_chart(make_args(1990, 5, 15, 12, 0, years=years))
+
+
+class TestAuditInputProvenance(unittest.TestCase):
+    def test_json_records_effective_rules_and_exact_location(self):
+        c = paipan.build_chart(make_args(1990, 5, 15, 14, 30, lng=123.75, tz=8.25))
+        self.assertEqual(c["input"]["zi_sect"], 2)
+        self.assertEqual(c["input"]["lng"], 123.75)
+        self.assertEqual(c["input"]["tz"], 8.25)
+        text = paipan.render_text(c)
+        self.assertIn("排盘口径", text)
+        self.assertIn("UTC+8.25", text)
+
+    def test_explicit_zi_sect_is_recorded(self):
+        c = paipan.build_chart(make_args(2000, 6, 1, 23, 30, zi_sect=1))
+        self.assertEqual(c["input"]["zi_sect"], 1)
+
+    def test_overseas_chart_has_no_china_dst_note(self):
+        c = paipan.build_chart(make_args(1988, 7, 1, 10, 0, lng=-75, tz=-5))
+        self.assertIsNone(c["input"]["dst_note"])
+
+    def test_china_dst_requires_explicit_opt_in(self):
+        self.assertIsNone(paipan.build_chart(make_args(1988, 7, 1, 10, 0))["input"]["dst_note"])
+        self.assertIsNone(paipan.build_chart(
+            make_args(1988, 7, 1, 10, 0, lng=103.8, tz=8))["input"]["dst_note"])
+        c = paipan.build_chart(make_args(1988, 7, 1, 10, 0, lng=113.3, tz=8,
+                                         china_dst=True))
+        self.assertIsNotNone(c["input"]["dst_note"])
+        self.assertTrue(c["input"]["china_dst"])
+
+
+class TestAuditReusableApiAndPartnerFlags(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.script = os.path.join(_SCRIPTS, "paipan.py")
+
+    def _run(self, *argv, no_site=False):
+        import subprocess
+        prefix = [sys.executable]
+        if no_site:
+            prefix.append("-S")
+        return subprocess.run(prefix + [self.script, *argv], capture_output=True, text=True)
+
+    def test_build_chart_invalid_input_raises_value_error(self):
+        with self.assertRaisesRegex(ValueError, "时0-23"):
+            paipan.build_chart(make_args(1990, 5, 15, 24, 0))
+
+    def test_invalid_gender_and_zi_sect_raise_value_error(self):
+        with self.assertRaisesRegex(ValueError, "gender"):
+            paipan.build_chart(make_args(1990, 5, 15, 12, 0, gender="x"))
+        with self.assertRaisesRegex(ValueError, "zi_sect"):
+            paipan.build_chart(make_args(1990, 5, 15, 12, 0, zi_sect=3))
+
+    def test_orphan_partner_lunar_rejected(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male", "--partner-lunar")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("--partner", r.stderr + r.stdout)
+
+    def test_orphan_partner_gender_rejected(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner-gender", "female")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("--partner", r.stderr + r.stdout)
+
+    def test_orphan_partner_china_dst_rejected(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner-china-dst")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("--partner", r.stderr + r.stdout)
+        ok = self._run("1990", "5", "15", "14", "30", "--gender", "male", "--json",
+                       "--partner", "1988", "7", "1", "10", "--partner-china-dst")
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        self.assertIn("夏令时", json.loads(ok.stdout)["partner_dst_note"])
+
+    def test_partner_lunar_missing_dependency_has_no_traceback(self):
+        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner", "1992", "8", "15", "10", "--partner-lunar", no_site=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("缺少依赖 lunar_python", r.stderr + r.stdout)
+        self.assertNotIn("Traceback", r.stderr)
 
 
 if __name__ == "__main__":

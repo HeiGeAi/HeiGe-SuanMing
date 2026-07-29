@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SCRIPTS = os.path.join(os.path.dirname(_HERE), "scripts")
@@ -280,6 +281,11 @@ class TestDiPan(unittest.TestCase):
         self.assertEqual(pan, {2: "戊", 1: "己", 9: "庚", 8: "辛", 7: "壬",
                                6: "癸", 5: "丁", 4: "丙", 3: "乙"})
 
+    def test_invalid_dun_and_ju_rejected(self):
+        for dun, ju in (("阳", 0), ("阴", 10), ("顺", 1)):
+            with self.subTest(dun=dun, ju=ju), self.assertRaises(ValueError):
+                qimen.di_pan(dun, ju)
+
 
 class TestXunShou(unittest.TestCase):
     def test_six_xun(self):
@@ -302,8 +308,34 @@ class TestJiaShiFuYin(unittest.TestCase):
         self.assertEqual(pan["值符"]["落宫"], 4)
         self.assertEqual(pan["值使"]["落宫"], 4)
         self.assertTrue(pan["伏吟"])
+        self.assertTrue(pan["星伏吟"])
+        self.assertTrue(pan["门伏吟"])
         self.assertEqual(pan["星steps"], 0)
         self.assertEqual(pan["门steps"], 0)
+
+
+class TestStarDoorFuFanYin(unittest.TestCase):
+    """星门分别标注，旧通用字段覆盖任一成立。"""
+
+    def test_door_fanyin_is_not_lost(self):
+        pan = qimen.build_pan(2026, 1, 1, 2, 0)
+        self.assertFalse(pan["星反吟"])
+        self.assertTrue(pan["门反吟"])
+        self.assertTrue(pan["反吟"])
+        self.assertIn("门反吟", qimen.render_text(pan))
+
+    def test_door_fuyin_is_not_lost(self):
+        pan = qimen.build_pan(2026, 1, 1, 8, 0)
+        self.assertFalse(pan["星伏吟"])
+        self.assertTrue(pan["门伏吟"])
+        self.assertTrue(pan["伏吟"])
+        self.assertIn("门伏吟", qimen.render_text(pan))
+
+    def test_star_fanyin_remains_distinct(self):
+        pan = qimen.build_pan(2026, 1, 1, 12, 0)
+        self.assertTrue(pan["星反吟"])
+        self.assertFalse(pan["门反吟"])
+        self.assertIn("星反吟", qimen.render_text(pan))
 
 
 class TestXunKongYima(unittest.TestCase):
@@ -486,6 +518,15 @@ class TestValidation(unittest.TestCase):
         r = self._run("2026", "6", "1", "12", "--zi-sect", "3")
         self.assertNotEqual(r.returncode, 0)
         self.assertNotIn("Traceback", r.stdout + r.stderr)
+
+    def test_core_invalid_date_is_value_error(self):
+        with self.assertRaises(ValueError):
+            qimen.build_pan(2026, 2, 30, 12, 0)
+
+    def test_missing_dependency_is_runtime_error(self):
+        with patch.dict(sys.modules, {"lunar_python": None}):
+            with self.assertRaises(RuntimeError):
+                qimen.build_pan(2026, 6, 1, 12, 0)
 
 
 class TestCli(unittest.TestCase):
