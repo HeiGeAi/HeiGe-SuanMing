@@ -4,7 +4,7 @@ description: 四柱八字与紫微斗数命理排盘推演，兼梅花易数、�
 license: PolyForm Noncommercial 1.0.0
 metadata:
   trigger: /bazi-mingli
-  version: 1.15.0
+  version: 1.15.1
   engine-version: 1.4.0
   meihua-version: 1.1.0
   liuyao-version: 1.1.0

@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.15.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.15.1-7c3aed.svg)
 ![Engine](https://img.shields.io/badge/engine-1.4.0-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
@@ -238,7 +238,7 @@ git clone https://github.com/HeiGeAi/HeiGe-SuanMing.git ~/.claude/skills/bazi-mi
 
 ```bash
 pip3 install -r ~/.claude/skills/bazi-mingli/requirements.txt
-# 或者直接：pip3 install lunar_python
+# 或者直接：pip3 install lunar_python==1.4.8
 ```
 
 ### 3. 在 Claude Code 里用
@@ -419,7 +419,7 @@ HeiGe-SuanMing/
 
 - 任意"能读文件 + 跑 Python"的 AI Agent（推荐 Claude Code + Claude Opus 4.8）
 - Python 3.7+
-- `lunar_python >= 1.4.8`
+- `lunar_python == 1.4.8`，固定排盘底座，升级前须跑完整回归
 
 ---
 
