@@ -6,15 +6,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-class TestReleaseContractV1150(unittest.TestCase):
+class TestReleaseContractV1151(unittest.TestCase):
     def test_declared_minimum_dependency_matches_supported_runtime(self):
         requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
-        self.assertRegex(requirements, r"(?m)^lunar_python>=1\.4\.8$")
+        self.assertRegex(requirements, r"(?m)^lunar_python==1\.4\.8$")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        self.assertIn("Python 3.7+", readme)
+        self.assertIn("'3.7'", workflow)
 
     def test_version_metadata_matches_engines(self):
         skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         expected = {
-            "version": "1.15.0",
+            "version": "1.15.1",
             "engine-version": "1.4.0",
             "meihua-version": "1.1.0",
             "liuyao-version": "1.1.0",
