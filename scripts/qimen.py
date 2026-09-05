@@ -16,8 +16,8 @@ qimen.py：时家奇门遁甲排局引擎 v1.2（转盘）。
 - 八神：值符螣蛇太阴六合白虎玄武九地九天；阳遁古法白虎=勾陈、玄武=朱雀，
   属同位异名，输出以白虎/玄武为主名。
 
-全部排布公式经开源实现交叉核验（kinqimen/qfdk/qimenpaipan+元亨利贞四源，
-黄金用例见 tests/test_qimen.py），出处与存疑标注见 references/21。
+当前固定逐宫期望与置闰电池见 tests/test_qimen.py；历史外部比对的原始快照与
+版本尚未随仓库归档，不把固定案例外推为全量证明，出处与存疑见 references/21。
 """
 
 import argparse
@@ -26,7 +26,7 @@ import json
 import os
 import sys
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
@@ -294,9 +294,9 @@ def _zhirun_jieqi_of_futou(F, leap_min):
 def zhirun_ding_ju(day_pillar_date, leap_min=8):
     """置闰法定局：日柱所在民用日 → (遁, 局数, 元, 节气归属, 符头, 状态)。
 
-    黄金值 oracle=元亨利贞在线置闰排盘（43 用例实测全过）；leap_min=8 为
+    固定期望来自历史元亨利贞人工比对记录（原始快照与版本未归档）；leap_min=8 为
     「含头尾满九天即闰」派（元亨利贞实测口径，默认），9 为古籍「超过九天」派，
-    两派仅在 2007/2010/2015/2030 四段各差半年局数。
+    在 2000-2030 年范围内，两派仅在 2007/2010/2015/2030 四段各差半年局数。
     """
     n = _day_index_by_date(day_pillar_date)
     yuan = (n // 5) % 3
@@ -587,6 +587,7 @@ def build_pan(y, mo, d, h, mi, zi_sect=1, ju_fa="chaibu", leap_min=8):
         "input": {"公历": f"{y:04d}-{mo:02d}-{d:02d} {h:02d}:{mi:02d}",
                   "zi_sect": zi_sect,
                   "排局法": "置闰" if ju_fa == "zhirun" else "拆补",
+                  "zhirun_leap_min": leap_min if ju_fa == "zhirun" else None,
                   "盘式": "转盘", "寄宫": "中五寄坤二"},
         "四柱": pillars,
         "节气": {"名": jieqi_name, "交气": jieqi_time.strftime("%Y-%m-%d %H:%M:%S")},
@@ -631,6 +632,13 @@ def render_text(pan):
     lines.append("═" * 21 + " 奇门遁甲 · 时家转盘 " + "═" * 21)
     lines.append(f"公历：{pan['input']['公历']}　排局：{pan['input']['排局法']}法"
                  f"　盘式：转盘（中五寄坤二）")
+    inp = pan["input"]
+    zi_label = {1: "23点换日", 2: "夜子时不换日"}.get(inp.get("zi_sect"), "未记录")
+    convention = f"子时口径：{zi_label}"
+    if inp["排局法"] == "置闰":
+        threshold = inp.get("zhirun_leap_min")
+        convention += f"　置闰阈值：{threshold if threshold is not None else '未记录'}"
+    lines.append(convention)
     p = pan["四柱"]
     lines.append(f"四柱：{p['年柱']}年 {p['月柱']}月 {p['日柱']}日 {p['时柱']}时")
     jq = pan["节气"]

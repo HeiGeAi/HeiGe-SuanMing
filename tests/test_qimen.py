@@ -3,9 +3,8 @@
 """
 奇门遁甲排局引擎回归测试。
 
-黄金基准来源（四源交叉，无单库全对、须拼装的教训见 references/21）：
-- 用例 A（2026-07-09 10:30 阴遁二局）：kinqimen 与 qfdk/qimen 本机活体实跑
-  逐宫一致，另有 qimenpaipan 与元亨利贞在线排盘四源一致，最强基准。
+固定基准来源：两个逐宫期望与置闰电池，历史外部比对记录见 references/21。
+原始工具版本与输出快照尚未归档，所以这里只证明代码符合仓库固定期望。
 - 用例 B（2026-01-01 12:00 阳遁四局）：天禽入中 + 值使从真实宫数 5 起数 +
   全盘星反吟三重边界；「从宫 5 起数」为多方权威盘证伪 qfdk 少数派数法后
   钉死的口径。
@@ -13,6 +12,7 @@
   不混局，均按 references/21 实测结论钉死。
 """
 
+import datetime
 import json
 import os
 import subprocess
@@ -30,7 +30,7 @@ QIMEN_PY = os.path.join(_SCRIPTS, "qimen.py")
 
 
 class TestGoldenCaseA(unittest.TestCase):
-    """黄金用例 A：2026-07-09 10:30，阴遁二局中元（四源一致最强基准）。"""
+    """固定用例 A：2026-07-09 10:30，阴遁二局中元。"""
 
     @classmethod
     def setUpClass(cls):
@@ -351,14 +351,28 @@ class TestXunKongYima(unittest.TestCase):
             self.assertEqual(qimen.YIMA[zhi], ma)
         self.assertEqual({qimen.ZHI_GONG[m] for m in "寅申亥巳"}, {8, 2, 6, 4})
 
+    def test_invalid_ganzhi_fails_in_bounded_lookup(self):
+        code = (
+            "import sys; "
+            f"sys.path.insert(0, {str(_SCRIPTS)!r}); "
+            "import qimen; "
+            "\ntry: qimen._ganzhi_index('甲丑')"
+            "\nexcept ValueError as exc: print(exc); raise SystemExit(0)"
+            "\nraise SystemExit(1)"
+        )
+        completed = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True, timeout=1
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("非法干支", completed.stdout)
+
 
 class TestZhiRun(unittest.TestCase):
     """置闰法定局（超神接气·符头分类法）。
-    oracle=元亨利贞在线置闰排盘实测（qimenpaipan 有五类缺陷只可借思路，
-    kinqimen 置闰分支有 bug，黄金值一律以元亨利贞为准，详见 references/21）。"""
+    固定期望来自历史外部比对记录；原始版本与输出未归档，详见 references/21。"""
 
     BATTERY = [
-        # (公历日期, 期望遁, 期望局数)：35 项元亨利贞实测电池
+        # (公历日期, 期望遁, 期望局数)：35 项固定期望电池
         ("2004-09-01", "阴", 9), ("2025-12-21", "阳", 1), ("2026-06-21", "阴", 9),
         ("2024-06-07", "阳", 3), ("2024-06-15", "阴", 9), ("2024-11-30", "阴", 4),
         ("2024-12-10", "阴", 1), ("2024-12-15", "阴", 4), ("2024-12-23", "阴", 1),
@@ -378,6 +392,17 @@ class TestZhiRun(unittest.TestCase):
             y, m, d = map(int, ds.split("-"))
             p = qimen.build_pan(y, m, d, 12, 0, ju_fa="zhirun")
             self.assertEqual((p["局"]["遁"], p["局"]["局数"]), (edun, eju), ds)
+
+    def test_cross_year_futou_full_tuple(self):
+        import datetime
+        cases = [
+            ((1617, 12, 30), ("阳", 2, "上元", "小寒", "甲午", "常规段")),
+            ((1614, 12, 31), ("阳", 2, "上元", "小寒", "己卯", "常规段")),
+            ((1609, 1, 1), ("阳", 2, "上元", "小寒", "己酉", "常规段")),
+            ((1606, 1, 2), ("阳", 2, "上元", "小寒", "甲午", "常规段")),
+        ]
+        for ymd, expected in cases:
+            self.assertEqual(qimen.zhirun_ding_ju(datetime.date(*ymd)), expected, ymd)
 
     def test_leap_min_flip(self):
         # 两派阈值分歧窗口：2010 夏至 diff=8。派8（默认）闰芒种得阳6，
@@ -488,6 +513,63 @@ class TestDuanJu(unittest.TestCase):
         self.assertEqual(len(qimen.KEYING), 9)
         for tg, row in qimen.KEYING.items():
             self.assertEqual(len(row), 9, tg)
+
+
+class TestConfigurationProvenance(unittest.TestCase):
+    """保存有效口径，使置闰盘能按输出重放，并兼容旧版盘面字典。"""
+
+    def test_zhirun_threshold_is_preserved_for_replay(self):
+        # 独立边界：1987-06-15 的两种阈值会翻转阴阳遁。
+        pans = [qimen.build_pan(1987, 6, 15, 9, 15, ju_fa="zhirun", leap_min=n)
+                for n in (8, 9)]
+        self.assertEqual([(p["局"]["遁"], p["局"]["局数"]) for p in pans],
+                         [("阳", 6), ("阴", 9)])
+        for n, pan in zip((8, 9), pans):
+            with self.subTest(threshold=n):
+                inp = pan["input"]
+                self.assertEqual(inp["zhirun_leap_min"], n)
+                when = datetime.datetime.strptime(inp["公历"], "%Y-%m-%d %H:%M")
+                replay = qimen.build_pan(
+                    when.year, when.month, when.day, when.hour, when.minute,
+                    zi_sect=inp["zi_sect"], ju_fa="zhirun",
+                    leap_min=inp["zhirun_leap_min"],
+                )
+                self.assertEqual(replay, pan)
+
+    def test_chaibu_records_threshold_as_inapplicable(self):
+        for n in (8, 9):
+            with self.subTest(threshold=n):
+                pan = qimen.build_pan(1987, 6, 15, 9, 15, leap_min=n)
+                self.assertIsNone(pan["input"]["zhirun_leap_min"])
+                self.assertNotIn("置闰阈值", qimen.render_text(pan))
+
+    def test_text_discloses_threshold_and_zi_sect(self):
+        for n, sect, label in ((8, 1, "23点换日"), (9, 2, "夜子时不换日")):
+            with self.subTest(threshold=n, zi_sect=sect):
+                pan = qimen.build_pan(1987, 6, 15, 23, 15, zi_sect=sect,
+                                      ju_fa="zhirun", leap_min=n)
+                text = qimen.render_text(pan)
+                self.assertIn(f"置闰阈值：{n}", text)
+                self.assertIn(f"子时口径：{label}", text)
+
+    def test_legacy_pan_does_not_invent_missing_threshold(self):
+        pan = qimen.build_pan(1987, 6, 15, 9, 15, ju_fa="zhirun", leap_min=9)
+        pan["input"].pop("zhirun_leap_min", None)
+        text = qimen.render_text(pan)
+        self.assertIn("置闰阈值：未记录", text)
+        self.assertNotIn("置闰阈值：8", text)
+        self.assertNotIn("置闰阈值：9", text)
+
+    def test_cli_preserves_selected_threshold_in_json_and_text(self):
+        cmd = [sys.executable, QIMEN_PY, "1987", "6", "15", "9", "15",
+               "--ju-fa", "zhirun", "--zhirun-leap-min", "9", "--zi-sect", "2"]
+        json_result = subprocess.run(cmd + ["--json"], capture_output=True, text=True)
+        self.assertEqual(json_result.returncode, 0, json_result.stderr)
+        self.assertEqual(json.loads(json_result.stdout)["input"]["zhirun_leap_min"], 9)
+        text_result = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(text_result.returncode, 0, text_result.stderr)
+        self.assertIn("置闰阈值：9", text_result.stdout)
+        self.assertIn("子时口径：夜子时不换日", text_result.stdout)
 
 
 class TestValidation(unittest.TestCase):

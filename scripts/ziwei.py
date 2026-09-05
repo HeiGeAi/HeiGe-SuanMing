@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-紫微斗数安星引擎 v1.2 · HeiGe-SuanMing / bazi-mingli skill
+紫微斗数安星引擎 v1.3 · HeiGe-SuanMing / bazi-mingli skill
 
 把紫微斗数最容易装错的一段（十二宫定位、五行局、紫微星系、天府星系、四化、
 六吉、禄存、六煞、大限小限）交给脚本算准，推演层（用神取象、宫位互参、化忌冲、限运吉凶）
@@ -12,8 +12,9 @@ License: PolyForm Noncommercial 1.0.0（完整条款见仓库根 LICENSE）
 
 紫微斗数是命理（批一生），与八字同属命理门类、与梅花六爻的占卜门类不同。
 
-全部安星公式已用开源实现 iztro（github.com/SylarLong/iztro）的官方测试用例做过
-40 项数值核验（39 项精确吻合，1 项为已知流派分歧并如实标注，见 references/20）。
+选定安星锚点曾与 iztro 的固定配置比对；闰月与换年边界另以 iztro 2.5.8
+显式配置复核并记录差异。该证据只覆盖固定案例，不代表所有年份与流派，
+也不表示同名配置的边界行为完全相同，见 references/20。
 
 用法：
   python3 ziwei.py 2000 8 16 3 30 --gender female            # 公历生辰起盘
@@ -25,7 +26,7 @@ import argparse
 import os
 import sys
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
@@ -50,6 +51,14 @@ def locate_ming_shen_gong(month, time_idx):
     ming_gong = (month_gong - time_idx) % 12
     shen_gong = (month_gong + time_idx) % 12
     return ming_gong, shen_gong
+
+
+def _chart_month(lunar_month, day, fix_leap):
+    """闰月安宫口径：十五及以前按本月，十六起按下一月。"""
+    month = abs(lunar_month)
+    if lunar_month < 0 and fix_leap and day > 15:
+        return month % 12 + 1
+    return month
 
 
 def palace_order_from(ming_gong_idx):
@@ -200,9 +209,9 @@ def liusha_stars(year_gan_idx, year_zhi_idx, time_idx):
     """六煞星：擎羊陀罗在禄存前后；地空地劫按时辰；火铃按年支三合局与时辰。"""
     lucun = lucun_position(year_gan_idx)
     huo_start = ling_start = None
-    for zhis, (h, l) in _SANHE_GROUPS:
+    for zhis, (huo, ling) in _SANHE_GROUPS:
         if year_zhi_idx in zhis:
-            huo_start, ling_start = h, l
+            huo_start, ling_start = huo, ling
             break
     return {
         "擎羊": (lucun + 1) % 12,
@@ -257,10 +266,17 @@ def xiaoxian_gong(year_zhi_idx, gender, age):
 # ============================================================
 # 主排盘
 # ============================================================
-def build_chart(y, mo, d, h, mi, gender, lunar=False):
+def build_chart(y, mo, d, h, mi, gender, lunar=False, fix_leap=True,
+                year_divide="normal"):
     if gender not in {"male", "female"}:
         raise ValueError("性别须为 male 或 female。")
-    if not (YEAR_MIN <= y <= YEAR_MAX):
+    if not isinstance(fix_leap, bool):
+        raise ValueError("fix_leap 须为布尔值。")
+    if year_divide not in ("normal", "exact"):
+        raise ValueError("year_divide 须为 normal 或 exact。")
+    # 公历年初可能仍属于上一农历年；准入后按转换后的公历日期复核。
+    input_year_min = YEAR_MIN - 1 if lunar else YEAR_MIN
+    if not (input_year_min <= y <= YEAR_MAX):
         raise ValueError(f"年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {y}。")
     if not (0 <= h <= 23 and 0 <= mi <= 59):
         raise ValueError("输入有误：时0-23、分0-59。")
@@ -284,16 +300,30 @@ def build_chart(y, mo, d, h, mi, gender, lunar=False):
     except Exception as e:
         raise ValueError(f"起盘失败（请核对农历日期是否存在，留意小月与闰月）：{e}") from None
 
-    year_gan, year_zhi = lun.getYearGan(), lun.getYearZhi()
+    solar_year = lun.getSolar().getYear()
+    if not (YEAR_MIN <= solar_year <= YEAR_MAX):
+        raise ValueError(
+            f"农历日期转换后的公历年份超出支持范围："
+            f"本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {solar_year}。"
+        )
+
+    if year_divide == "exact":
+        year_ganzhi = lun.getEightChar().getYear()
+        year_gan, year_zhi = year_ganzhi[0], year_ganzhi[1]
+    else:
+        year_gan, year_zhi = lun.getYearGan(), lun.getYearZhi()
+    effective_year_ganzhi = year_gan + year_zhi
+    actual_lunar_year_ganzhi = lun.getYearGan() + lun.getYearZhi()
     year_gan_idx, year_zhi_idx = GAN_IDX[year_gan], ZHI_IDX[year_zhi]
     lunar_month = lun.getMonth()
     leap_month = lunar_month < 0
     month = abs(lunar_month)
     day = lun.getDay()
+    chart_month = _chart_month(lunar_month, day, fix_leap)
     time_zhi = lun.getTimeZhi()
     time_idx = ZHI_IDX[time_zhi]
 
-    ming_gong_idx, shen_gong_idx = locate_ming_shen_gong(month, time_idx)
+    ming_gong_idx, shen_gong_idx = locate_ming_shen_gong(chart_month, time_idx)
     palaces_idx = palace_order_from(ming_gong_idx)
 
     mg_gan_idx = ming_gong_gan(year_gan_idx, ming_gong_idx)
@@ -307,7 +337,7 @@ def build_chart(y, mo, d, h, mi, gender, lunar=False):
     major_stars = {**ziwei_stars, **tianfu_stars}
 
     sihua = SIHUA[year_gan]
-    liuji = liuji_stars(year_gan_idx, month, time_idx)
+    liuji = liuji_stars(year_gan_idx, chart_month, time_idx)
     lucun_idx = lucun_position(year_gan_idx)
     liusha = liusha_stars(year_gan_idx, year_zhi_idx, time_idx)
 
@@ -354,8 +384,12 @@ def build_chart(y, mo, d, h, mi, gender, lunar=False):
     return {
         "version": __version__,
         "input": {"solar_or_lunar_input": "农历" if lunar else "公历",
-                  "gender": "男" if gender == "male" else "女"},
-        "lunar": {"年干支": year_gan + year_zhi, "月": month, "闰月": leap_month,
+                  "gender": "男" if gender == "male" else "女",
+                  "year": y, "month": mo, "day": d, "hour": h, "minute": mi,
+                  "fix_leap": fix_leap, "year_divide": year_divide},
+        "calculation": {"effective_year_ganzhi": effective_year_ganzhi,
+                        "effective_month": chart_month},
+        "lunar": {"年干支": actual_lunar_year_ganzhi, "月": month, "闰月": leap_month,
                   "日": day, "时支": time_zhi},
         "命宫": {"地支": ZHI[ming_gong_idx], "干支": mg_gan + ZHI[ming_gong_idx]},
         "身宫": {"地支": ZHI[shen_gong_idx], "所在宫": idx_to_palace[shen_gong_idx]},
@@ -377,10 +411,15 @@ def render_text(c):
     L = []
     def P(s=""): L.append(s)
     P("════════════════════ 紫微斗数 · 命盘 ════════════════════")
-    P(f"性别：{c['input']['gender']}　输入历法：{c['input']['solar_or_lunar_input']}")
+    inp = c["input"]
+    P(f"原始输入：{inp['year']}-{inp['month']}-{inp['day']} {inp['hour']:02d}:{inp['minute']:02d}　"
+      f"性别：{inp['gender']}　历法：{inp['solar_or_lunar_input']}")
     lu = c["lunar"]
     month_text = f"闰{lu['月']}" if lu["闰月"] else str(lu["月"])
     P(f"农历：{lu['年干支']}年 {month_text}月 {lu['日']}日 {lu['时支']}时")
+    calc = c["calculation"]
+    P(f"排盘口径：fix_leap={str(inp['fix_leap']).lower()}　year_divide={inp['year_divide']}　"
+      f"排盘采用年：{calc['effective_year_ganzhi']}　安宫月：{calc['effective_month']}")
     P(f"命宫：{c['命宫']['干支']}　身宫：{c['身宫']['地支']}（在{c['身宫']['所在宫']}）　五行局：{c['五行局']}")
     P(f"紫微：{c['紫微']}　天府：{c['天府']}　命主：{c['命主']}　身主：{c['身主']}")
     P("")
@@ -441,13 +480,18 @@ def main():
     ap.add_argument("--gender", choices=["male", "female"], required=True)
     ap.add_argument("--lunar", action="store_true",
                     help="输入按农历(默认阳历)；闰月用负数月，如 -2=闰二月")
+    ap.add_argument("--no-fix-leap", action="store_false", dest="fix_leap",
+                    help="闰月不分上下半月，整月均按本月安宫")
+    ap.add_argument("--year-divide", choices=["normal", "exact"], default="normal",
+                    help="排盘年界：normal=春节，exact=立春")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"ziwei v{__version__}")
     args = ap.parse_args()
 
     try:
         chart = build_chart(args.year, args.month, args.day, args.hour, args.minute,
-                            args.gender, lunar=args.lunar)
+                            args.gender, lunar=args.lunar, fix_leap=args.fix_leap,
+                            year_divide=args.year_divide)
     except (ValueError, RuntimeError) as e:
         ap.error(str(e))
     if args.json:

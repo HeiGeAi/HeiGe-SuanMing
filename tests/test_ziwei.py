@@ -375,6 +375,18 @@ class TestValidation(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     ziwei.build_chart(y, mo, d, h, mi, gender, lunar=lunar)
 
+    def test_new_policy_arguments_reject_invalid_values(self):
+        with self.assertRaises(ValueError):
+            ziwei.build_chart(2000, 8, 16, 3, 30, "female", fix_leap="yes")
+        with self.assertRaises(ValueError):
+            ziwei.build_chart(2000, 8, 16, 3, 30, "female", year_divide="other")
+        with self.assertRaises(ValueError):
+            ziwei.build_chart(2000, 8, 16, 3, 30, "female", year_divide=[])
+
+    def test_lunar_input_cannot_convert_beyond_supported_solar_year(self):
+        with self.assertRaisesRegex(ValueError, "公历.*2200"):
+            ziwei.build_chart(2200, 12, 29, 12, 0, "male", lunar=True)
+
 
 class TestLeapMonth(unittest.TestCase):
     def test_lunar_and_solar_inputs_preserve_leap_month(self):
@@ -384,6 +396,68 @@ class TestLeapMonth(unittest.TestCase):
             self.assertEqual(chart["lunar"]["月"], 2)
             self.assertTrue(chart["lunar"]["闰月"])
             self.assertIn("闰2月", ziwei.render_text(chart))
+
+    def test_fix_leap_uses_next_month_from_day_16_for_solar_and_lunar_inputs(self):
+        cases = [
+            ((2023, 4, 5), False, "酉", "木3局", 15),
+            ((2023, 4, 6), False, "戌", "水2局", 16),
+            ((2023, -2, 15), True, "酉", "木3局", 15),
+            ((2023, -2, 16), True, "戌", "水2局", 16),
+        ]
+        for (year, month, day), lunar, palace, bureau, lunar_day in cases:
+            with self.subTest(year=year, month=month, day=day, lunar=lunar):
+                chart = ziwei.build_chart(
+                    year, month, day, 12, 0, "male", lunar=lunar, fix_leap=True
+                )
+                self.assertEqual(chart["命宫"]["地支"], palace)
+                self.assertEqual(chart["五行局"], bureau)
+                self.assertEqual(chart["lunar"]["月"], 2)
+                self.assertTrue(chart["lunar"]["闰月"])
+                self.assertEqual(chart["lunar"]["日"], lunar_day)
+                self.assertEqual(chart["calculation"]["effective_month"], 2 if lunar_day == 15 else 3)
+
+    def test_fix_leap_false_keeps_entire_leap_month_on_original_month(self):
+        chart = ziwei.build_chart(2023, 4, 6, 12, 0, "male", fix_leap=False)
+        self.assertEqual(chart["命宫"]["地支"], "酉")
+        self.assertEqual(chart["五行局"], "木3局")
+        self.assertEqual(chart["input"]["fix_leap"], False)
+
+    def test_twelfth_leap_month_wraps_to_first_month(self):
+        self.assertEqual(ziwei._chart_month(-12, 16, True), 1)
+
+    def test_fix_leap_uses_lunar_day_even_at_late_zi_hour(self):
+        fixed = ziwei.build_chart(2023, 4, 6, 23, 30, "male", fix_leap=True)
+        unfixed = ziwei.build_chart(2023, 4, 6, 23, 30, "male", fix_leap=False)
+        self.assertEqual((fixed["lunar"]["日"], fixed["calculation"]["effective_month"]), (16, 3))
+        self.assertEqual((fixed["命宫"]["地支"], fixed["五行局"]), ("辰", "土5局"))
+        self.assertEqual(unfixed["calculation"]["effective_month"], 2)
+
+
+class TestYearDivide(unittest.TestCase):
+    def test_normal_uses_lunar_new_year_and_exact_uses_lichun(self):
+        normal = ziwei.build_chart(
+            2024, 2, 5, 12, 0, "male", year_divide="normal"
+        )
+        exact = ziwei.build_chart(
+            2024, 2, 5, 12, 0, "male", year_divide="exact"
+        )
+        self.assertEqual(normal["lunar"]["年干支"], "癸卯")
+        self.assertEqual(exact["lunar"]["年干支"], "癸卯")
+        self.assertEqual(normal["calculation"]["effective_year_ganzhi"], "癸卯")
+        self.assertEqual(exact["calculation"]["effective_year_ganzhi"], "甲辰")
+        self.assertEqual(normal["五行局"], "火6局")
+        self.assertEqual(exact["五行局"], "土5局")
+        self.assertNotEqual(normal["五行局"], exact["五行局"])
+        self.assertEqual(normal["input"]["year_divide"], "normal")
+        self.assertEqual(exact["input"]["year_divide"], "exact")
+        self.assertIn("农历：癸卯年 12月 26日", ziwei.render_text(exact))
+        self.assertIn("排盘采用年：甲辰", ziwei.render_text(exact))
+
+    def test_exact_year_divide_uses_lichun_instant_not_whole_date(self):
+        before = ziwei.build_chart(2024, 2, 4, 16, 27, "male", year_divide="exact")
+        after = ziwei.build_chart(2024, 2, 4, 16, 28, "male", year_divide="exact")
+        self.assertEqual(before["calculation"]["effective_year_ganzhi"], "癸卯")
+        self.assertEqual(after["calculation"]["effective_year_ganzhi"], "甲辰")
 
 
 class TestCli(unittest.TestCase):
@@ -407,10 +481,69 @@ class TestCli(unittest.TestCase):
         self.assertEqual(r.returncode, 0)
         self.assertIn("\"命宫\"", r.stdout)
 
+    def test_policy_flags_are_applied_and_recorded_in_json(self):
+        import json
+        r = self._run(
+            "2023", "4", "6", "12", "0", "--gender", "male",
+            "--no-fix-leap", "--year-divide", "exact", "--json",
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        chart = json.loads(r.stdout)
+        self.assertEqual(chart["命宫"]["地支"], "酉")
+        self.assertEqual(chart["input"]["fix_leap"], False)
+        self.assertEqual(chart["input"]["year_divide"], "exact")
+        self.assertEqual(
+            {key: chart["input"][key] for key in ("year", "month", "day", "hour", "minute")},
+            {"year": 2023, "month": 4, "day": 6, "hour": 12, "minute": 0},
+        )
+        self.assertEqual(chart["calculation"]["effective_month"], 2)
+        self.assertEqual(chart["calculation"]["effective_year_ganzhi"], "癸卯")
+
     def test_version(self):
         r = self._run("--version")
         self.assertEqual(r.returncode, 0)
         self.assertIn("ziwei v", r.stdout)
+
+
+class TestGregorianRangeCalendarEquivalence(unittest.TestCase):
+    """公历范围按转换后日期判断，保留年份分界和闰月策略。"""
+
+    def test_supported_boundary_dates_match_lunar_input(self):
+        cases = [((1600, 1, 1), (1599, 11, 16)),
+                 ((1600, 1, 16), (1599, 12, 1)),
+                 ((2200, 12, 31), (2200, 11, 25))]
+        for solar, lunar in cases:
+            for hour in (12, 23):
+                for divide in ("normal", "exact"):
+                    for fix_leap in (False, True):
+                        with self.subTest(solar=solar, hour=hour, divide=divide, fix_leap=fix_leap):
+                            expected = ziwei.build_chart(*solar, hour, 30, "male",
+                                                         year_divide=divide, fix_leap=fix_leap)
+                            actual = ziwei.build_chart(*lunar, hour, 30, "male", lunar=True,
+                                                       year_divide=divide, fix_leap=fix_leap)
+                            self.assertEqual({k: v for k, v in actual.items() if k != "input"},
+                                             {k: v for k, v in expected.items() if k != "input"})
+                            self.assertEqual(actual["input"]["year"], lunar[0])
+
+    def test_outside_solar_dates_rejected_in_both_calendars(self):
+        cases = [((1599, 12, 31), (1599, 11, 15)),
+                 ((2201, 1, 1), (2200, 11, 26))]
+        for solar, lunar in cases:
+            for ymd, is_lunar in ((solar, False), (lunar, True)):
+                for hour in (12, 23):
+                    with self.subTest(ymd=ymd, lunar=is_lunar, hour=hour):
+                        with self.assertRaisesRegex(ValueError, "公历.*(1600|2200)"):
+                            ziwei.build_chart(*ymd, hour, 30, "male", lunar=is_lunar)
+
+    def test_lower_boundary_lunar_cli_succeeds(self):
+        import json
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, os.path.join(_SCRIPTS, "ziwei.py"),
+             "1599", "12", "1", "12", "0", "--gender", "male", "--lunar", "--json"],
+            capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("命宫", json.loads(result.stdout))
 
 
 if __name__ == "__main__":

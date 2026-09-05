@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-梅花易数起卦引擎 v1.1 · HeiGe-SuanMing / bazi-mingli skill
+梅花易数起卦引擎 v1.2 · HeiGe-SuanMing / bazi-mingli skill
 
 把梅花易数最容易手推错的一段（先天八卦数取余定卦、互卦、变卦、体用定位）交给脚本算准，
 推演层（体用生克断吉凶、卦气旺衰、应期、万物类象）见 references/18_meihua_yishu.md。
@@ -24,7 +24,7 @@ import argparse
 import os
 import sys
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
@@ -192,7 +192,9 @@ def qigua_by_time_numbers(year_zhi_idx, month, day, hour_zhi_idx):
 
 def _validate_time_input(y, mo, d, h, mi, lunar):
     """时间起卦前置校验：与 paipan.py 同风格的中文报错，不把上游裸异常漏给用户。"""
-    if not (YEAR_MIN <= y <= YEAR_MAX):
+    # 公历年初可能仍属于上一农历年；准入后按转换后的公历日期复核。
+    input_year_min = YEAR_MIN - 1 if lunar else YEAR_MIN
+    if not (input_year_min <= y <= YEAR_MAX):
         raise ValueError(f"年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {y}。")
     if not (0 <= h <= 23 and 0 <= mi <= 59):
         raise ValueError("输入有误：时0-23、分0-59。")
@@ -216,16 +218,30 @@ def qigua_by_time(y, mo, d, h, mi, lunar=False, zi_sect=2):
         raise ValueError("zi_sect 只能为 1（晚子归次日）或 2（不换日）")
     _validate_time_input(y, mo, d, h, mi, lunar)
     try:
-        from lunar_python import Solar, Lunar
+        from lunar_python import Lunar, LunarMonth, Solar
     except ImportError as e:
         raise RuntimeError("缺少依赖 lunar_python，请先运行：pip3 install lunar_python") from e
+    if lunar:
+        month_label = f"闰{-mo}月" if mo < 0 else f"{mo}月"
+        month_info = LunarMonth.fromYm(y, mo)
+        if month_info is None:
+            raise ValueError(f"农历 {y} 年没有{month_label}，请核对（闰月用负数月表示，如 -2=闰二月）。")
+        if d > month_info.getDayCount():
+            raise ValueError(
+                f"农历 {y} 年{month_label}是小月，只有 {month_info.getDayCount()} 天，没有 {d} 日。"
+            )
     try:
         advanced = zi_sect == 1 and h == 23
         if lunar:
             lun = Lunar.fromYmdHms(y, mo, d, h, mi, 0)
+            solar = lun.getSolar()
+            if not (YEAR_MIN <= solar.getYear() <= YEAR_MAX):
+                raise ValueError(
+                    f"有效公历年份超出支持范围：农历日期转换后，"
+                    f"本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {solar.getYear()}。"
+                )
             if advanced:
                 from datetime import datetime, timedelta
-                solar = lun.getSolar()
                 nd = datetime(solar.getYear(), solar.getMonth(), solar.getDay()) + timedelta(days=1)
                 lun = Solar.fromYmdHms(nd.year, nd.month, nd.day, 23, mi, 0).getLunar()
         else:
@@ -238,6 +254,12 @@ def qigua_by_time(y, mo, d, h, mi, lunar=False, zi_sect=2):
                 lun = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar()
     except Exception as e:
         raise ValueError(f"时间起卦失败（请核对日期是否存在，农历留意小月）：{e}") from e
+    effective_year = lun.getSolar().getYear()
+    if not (YEAR_MIN <= effective_year <= YEAR_MAX):
+        raise ValueError(
+            f"有效公历年份超出支持范围：时间口径换算后为 {effective_year} 年，"
+            f"本引擎支持 {YEAR_MIN}-{YEAR_MAX} 年。"
+        )
     year_idx = ZHI.index(lun.getYearZhi()) + 1     # 子1..亥12
     lunar_month = lun.getMonth()
     month = abs(lunar_month)                        # 闰月与本月取数相同
@@ -269,7 +291,7 @@ def render_text(c, query=None):
     P("")
     ty = c["体用"]
     P(f"【体用】动爻在{ty['动在']} → 用卦 {ty['用卦']}({ty['用五行']})、体卦 {ty['体卦']}({ty['体五行']})")
-    P(f"  体代表求测者自身，用代表所占之事。")
+    P("  体代表求测者自身，用代表所占之事。")
     for k, v in c["生克"].items():
         P(f"  {k}：{v}")
     P("")
@@ -293,7 +315,7 @@ def main():
                    help="直接指定：上卦数(1-8) 下卦数(1-8) 动爻(1-6)")
     ap.add_argument("--lunar", action="store_true",
                     help="--time 按农历输入（闰月用负数月，如 -2=闰二月；闰月与本月取数相同）")
-    ap.add_argument("--zi-sect", type=int, choices=[1, 2], default=2,
+    ap.add_argument("--zi-sect", type=int, choices=[1, 2], default=None,
                     help="晚子时(23点后)取日口径：1=归次日、2=不换日(默认)；23点起卦时声明所用口径")
     ap.add_argument("--query", type=str, default=None, help="所占之事（一事一占）")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
@@ -301,11 +323,14 @@ def main():
     args = ap.parse_args()
 
     try:
+        if not args.time and (args.lunar or args.zi_sect is not None):
+            raise ValueError("--lunar 与 --zi-sect 仅能与 --time 同用。")
         if args.time:
             if not (4 <= len(args.time) <= 5):
                 sys.exit("--time 需 年 月 日 时 [分]")
             t = list(args.time) + [0] * (5 - len(args.time))
-            chart = qigua_by_time(t[0], t[1], t[2], t[3], t[4], lunar=args.lunar, zi_sect=args.zi_sect)
+            zi_sect = args.zi_sect if args.zi_sect is not None else 2
+            chart = qigua_by_time(t[0], t[1], t[2], t[3], t[4], lunar=args.lunar, zi_sect=zi_sect)
         elif args.numbers:
             chart = qigua_by_numbers(args.numbers[0], args.numbers[1])
         else:

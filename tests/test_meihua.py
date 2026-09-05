@@ -276,5 +276,105 @@ class TestAuditFixesV110(unittest.TestCase):
         self.assertEqual(json.loads(r.stdout)["query"], "问近期求职")
 
 
+class TestAuditRemediation(unittest.TestCase):
+    """审计回归：农历月份、转换后年份闸门与 CLI 参数语义。"""
+
+    def _run(self, *extra):
+        import subprocess
+        script = os.path.join(_SCRIPTS, "meihua.py")
+        return subprocess.run(
+            [sys.executable, script, *extra], capture_output=True, text=True, check=False
+        )
+
+    def test_lunar_short_month_has_chinese_error(self):
+        with self.assertRaises(ValueError) as cm:
+            meihua.qigua_by_time(1990, 4, 30, 12, 0, lunar=True)
+        message = str(cm.exception)
+        self.assertIn("小月，只有 29 天", message)
+        self.assertNotIn("only", message.lower())
+
+    def test_nonexistent_leap_month_has_chinese_error(self):
+        with self.assertRaises(ValueError) as cm:
+            meihua.qigua_by_time(2023, -3, 1, 12, 0, lunar=True)
+        message = str(cm.exception)
+        self.assertIn("没有闰3月", message)
+        self.assertNotIn("wrong lunar year", message.lower())
+
+    def test_lunar_conversion_cannot_cross_supported_solar_year(self):
+        with self.assertRaisesRegex(ValueError, "有效公历年份超出支持范围"):
+            meihua.qigua_by_time(2200, 12, 29, 12, 0, lunar=True)
+
+    def test_late_zi_advance_cannot_cross_supported_solar_year(self):
+        with self.assertRaisesRegex(ValueError, "有效公历年份超出支持范围"):
+            meihua.qigua_by_time(2200, 12, 31, 23, 30, zi_sect=1)
+
+    def test_lunar_flag_is_rejected_outside_time_mode(self):
+        for args in (("--numbers", "34", "43"), ("--gua", "2", "3", "1")):
+            with self.subTest(args=args):
+                r = self._run(*args, "--lunar")
+                self.assertNotEqual(r.returncode, 0)
+                self.assertIn("仅能与 --time 同用", r.stdout + r.stderr)
+
+    def test_explicit_zi_sect_is_rejected_outside_time_mode(self):
+        for args in (("--numbers", "34", "43"), ("--gua", "2", "3", "1")):
+            with self.subTest(args=args):
+                r = self._run(*args, "--zi-sect", "1")
+                self.assertNotEqual(r.returncode, 0)
+                self.assertIn("仅能与 --time 同用", r.stdout + r.stderr)
+
+    def test_time_cli_default_zi_sect_remains_two(self):
+        default = self._run("--time", "2026", "7", "4", "23", "30", "--json")
+        explicit = self._run("--time", "2026", "7", "4", "23", "30", "--zi-sect", "2", "--json")
+        self.assertEqual(default.returncode, 0, default.stderr)
+        self.assertEqual(explicit.returncode, 0, explicit.stderr)
+        self.assertEqual(json.loads(default.stdout), json.loads(explicit.stdout))
+
+
+class TestGregorianRangeCalendarEquivalence(unittest.TestCase):
+    """农历年可以早一年，实际公历日期和晚子推进均须守住边界。"""
+
+    def test_supported_boundary_dates_match_lunar_input(self):
+        cases = [((1600, 1, 1), (1599, 11, 16)),
+                 ((1600, 1, 16), (1599, 12, 1)),
+                 ((2200, 12, 31), (2200, 11, 25))]
+        for solar, lunar in cases:
+            for hour, sect in ((12, 2), (23, 2), (12, 1)):
+                with self.subTest(solar=solar, hour=hour, sect=sect):
+                    expected = meihua.qigua_by_time(*solar, hour, 30, zi_sect=sect)
+                    actual = meihua.qigua_by_time(*lunar, hour, 30, lunar=True, zi_sect=sect)
+                    self.assertEqual(actual, expected)
+
+    def test_lower_boundary_late_zi_matches_solar(self):
+        actual = meihua.qigua_by_time(1599, 11, 16, 23, 30, lunar=True, zi_sect=1)
+        expected = meihua.qigua_by_time(1600, 1, 1, 23, 30, zi_sect=1)
+        self.assertEqual(actual, expected)
+        self.assertIn("17日", actual["起卦法"].replace(" ", ""))
+
+    def test_outside_solar_dates_rejected_in_both_calendars(self):
+        cases = [((1599, 12, 31), (1599, 11, 15)),
+                 ((2201, 1, 1), (2200, 11, 26))]
+        for solar, lunar in cases:
+            for ymd, is_lunar in ((solar, False), (lunar, True)):
+                for hour, sect in ((12, 2), (23, 1)):
+                    with self.subTest(ymd=ymd, lunar=is_lunar, sect=sect):
+                        with self.assertRaisesRegex(ValueError, "公历.*(1600|2200)|支持.*1600"):
+                            meihua.qigua_by_time(*ymd, hour, 30, lunar=is_lunar, zi_sect=sect)
+
+    def test_upper_boundary_late_zi_rejected_in_both_calendars(self):
+        for ymd, is_lunar in (((2200, 12, 31), False), ((2200, 11, 25), True)):
+            with self.subTest(lunar=is_lunar):
+                with self.assertRaisesRegex(ValueError, "有效公历年份超出支持范围"):
+                    meihua.qigua_by_time(*ymd, 23, 30, lunar=is_lunar, zi_sect=1)
+
+    def test_lower_boundary_lunar_cli_succeeds(self):
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, os.path.join(_SCRIPTS, "meihua.py"),
+             "--time", "1599", "12", "1", "12", "0", "--lunar", "--json"],
+            capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("本卦", json.loads(result.stdout))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

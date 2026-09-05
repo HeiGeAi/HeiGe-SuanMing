@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-六爻（纳甲筮法）装卦引擎 v1.1 · HeiGe-SuanMing / bazi-mingli skill
+六爻（纳甲筮法）装卦引擎 v1.2 · HeiGe-SuanMing / bazi-mingli skill
 
 把六爻最容易装错的一段（纳甲配干支、八宫定世应、以宫五行配六亲、按日干起六神、
 动爻变卦、月建日辰旬空）交给脚本装准，推演层（用神取用、旺衰、动静生克、应期）
@@ -26,17 +26,14 @@ from datetime import datetime
 import os
 import sys
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 # 卦底座从 meihua 引入；五行表与年份闸门从 paipan 引入（唯一真源，避免多处拷贝漂移）
 from meihua import GUA64, TRIGRAM_YAO, YAO_TO_TRIGRAM, XIANTIAN, TRIGRAM_WX  # noqa: E402
-from paipan import ZHI, WUXING_SHENG, WUXING_KE, YEAR_MIN, YEAR_MAX  # noqa: E402
-
-ZHI_WUXING = {"子": "水", "丑": "土", "寅": "木", "卯": "木", "辰": "土", "巳": "火",
-              "午": "火", "未": "土", "申": "金", "酉": "金", "戌": "土", "亥": "水"}
+from paipan import ZHI_WUXING, WUXING_SHENG, WUXING_KE, YEAR_MIN, YEAR_MAX  # noqa: E402
 
 # 京房纳甲：各经卦所纳天干（内卦用, 外卦用）
 NAJIA_GAN = {"乾": ("甲", "壬"), "坤": ("乙", "癸"), "震": ("庚", "庚"), "巽": ("辛", "辛"),
@@ -102,10 +99,12 @@ def _najia(up_tri, down_tri):
     return res
 
 
-def _date_context(y, mo, d, h=None, mi=0):
+def _date_context(y, mo, d, h=None, mi=0, zi_sect=2):
     """起卦日的月建（节气月支）、日干支、旬空。h 缺省按正午取节气；交节日建议补时分。"""
     if not (YEAR_MIN <= y <= YEAR_MAX):
         raise ValueError(f"起卦年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {y}。")
+    if zi_sect not in (1, 2):
+        raise ValueError("zi_sect 须为 1（晚子换日）或 2（午夜换日）。")
     hour = h if h is not None else 12
     if not 0 <= hour <= 23:
         raise ValueError("--date 的时须为 0-23。")
@@ -121,18 +120,22 @@ def _date_context(y, mo, d, h=None, mi=0):
         raise RuntimeError("缺少依赖 lunar_python，请先运行：pip3 install lunar_python") from e
     try:
         ec = Solar.fromYmdHms(y, mo, d, hour, mi, 0).getLunar().getEightChar()
+        ec.setSect(zi_sect)
     except Exception as e:
         raise RuntimeError(f"起卦日期计算失败：{e}") from e
-    ctx = {"月建": ec.getMonth()[1], "日辰": ec.getDay(), "旬空": ec.getDayXunKong()}
+    ctx = {"月建": ec.getMonth()[1], "日辰": ec.getDay(), "旬空": ec.getDayXunKong(),
+           "子时流派": zi_sect}
     if h is None:
         ctx["提示"] = "月建按当日正午取节气；恰逢交节日时请在 --date 末尾补时分再核。"
     return ctx
 
 
-def build_pan(yao_marks, date=None):
+def build_pan(yao_marks, date=None, zi_sect=2):
     """装卦。yao_marks：六个 6/7/8/9（自初爻向上）。6=老阴(动) 7=少阳 8=少阴 9=老阳(动)。"""
     if len(yao_marks) != 6 or any(m not in (6, 7, 8, 9) for m in yao_marks):
         raise ValueError("摇卦须为六位 6/7/8/9（自初爻向上）")
+    if zi_sect not in (1, 2):
+        raise ValueError("zi_sect 须为 1（晚子换日）或 2（午夜换日）。")
     yao = [1 if m in (7, 9) else 0 for m in yao_marks]
     dong = [i + 1 for i, m in enumerate(yao_marks) if m in (6, 9)]
 
@@ -172,7 +175,7 @@ def build_pan(yao_marks, date=None):
     if date:
         if len(date) not in (3, 4, 5):
             raise ValueError("date 需为（年，月，日[, 时[, 分]]）")
-        ctx = _date_context(*date)
+        ctx = _date_context(*date, zi_sect=zi_sect)
         result["日月"] = ctx
         start = LIUSHEN_START[ctx["日辰"][0]]
         for i in range(6):
@@ -210,7 +213,7 @@ def render_text(c, yao_bits, query=None):
     P(head)
     if c.get("日月"):
         dm = c["日月"]
-        P(f"【日月】月建 {dm['月建']}　日辰 {dm['日辰']}　旬空 {dm['旬空']}")
+        P(f"【日月】月建 {dm['月建']}　日辰 {dm['日辰']}　旬空 {dm['旬空']}　子时流派 {dm['子时流派']}")
         if dm.get("提示"):
             P(f"  ※ {dm['提示']}")
     P("")
@@ -239,6 +242,8 @@ def main():
                    help="直接指定：上卦数(1-8) 下卦数(1-8) 动爻(0-6，0=静卦)")
     ap.add_argument("--date", type=int, nargs="+", metavar="Y M D [H [Mi]]",
                     help="起卦公历日期（可选时、分，交节日用于精确定月建），装月建/日辰/旬空/六神；不传则略过")
+    ap.add_argument("--zi-sect", type=int, choices=[1, 2], default=2,
+                    help="子时换日口径：1=23:00 换日，2=00:00 换日（默认 2）")
     ap.add_argument("--query", type=str, default=None, help="所占之事（一事一占）")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"liuyao v{__version__}")
@@ -254,7 +259,7 @@ def main():
         if args.date:
             if not (3 <= len(args.date) <= 5):
                 raise ValueError("--date 需 年 月 日 [时 [分]]，如 --date 2026 6 15 或 --date 2026 6 5 23 49")
-        pan = build_pan(marks, date=tuple(args.date) if args.date else None)
+        pan = build_pan(marks, date=tuple(args.date) if args.date else None, zi_sect=args.zi_sect)
     except (ValueError, RuntimeError) as e:
         sys.exit(f"装卦失败：{e}")
     except Exception as e:

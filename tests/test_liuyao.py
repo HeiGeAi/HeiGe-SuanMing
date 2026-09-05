@@ -22,6 +22,7 @@ _SCRIPTS = os.path.join(os.path.dirname(_HERE), "scripts")
 sys.path.insert(0, _SCRIPTS)
 
 import liuyao  # noqa: E402
+import paipan  # noqa: E402
 from meihua import TRIGRAM_YAO  # noqa: E402
 
 
@@ -38,18 +39,18 @@ class TestNaJia(unittest.TestCase):
 
     def test_qian_najia(self):
         p = liuyao.build_pan([7] * 6)
-        self.assertEqual([l["干支"] for l in p["爻"]],
+        self.assertEqual([line["干支"] for line in p["爻"]],
                          ["甲子", "甲寅", "甲辰", "壬午", "壬申", "壬戌"])
 
     def test_kun_najia(self):
         p = liuyao.build_pan([8] * 6)
-        self.assertEqual([l["干支"] for l in p["爻"]],
+        self.assertEqual([line["干支"] for line in p["爻"]],
                          ["乙未", "乙巳", "乙卯", "癸丑", "癸亥", "癸酉"])
 
     def test_kan_inner(self):
         # 坎为水：内卦戊寅、戊辰、戊午
         p = pan_of("坎", "坎")
-        self.assertEqual([l["干支"] for l in p["爻"][:3]], ["戊寅", "戊辰", "戊午"])
+        self.assertEqual([line["干支"] for line in p["爻"][:3]], ["戊寅", "戊辰", "戊午"])
 
     def test_dui_inner(self):
         # 兑为泽：初爻丁巳
@@ -102,7 +103,7 @@ class TestLiuQin(unittest.TestCase):
     def test_qian_liuqin(self):
         # 乾宫金：子水子孙、寅木妻财、辰土父母、午火官鬼、申金兄弟、戌土父母
         p = liuyao.build_pan([7] * 6)
-        self.assertEqual([l["六亲"] for l in p["爻"]],
+        self.assertEqual([line["六亲"] for line in p["爻"]],
                          ["子孙", "妻财", "父母", "官鬼", "兄弟", "父母"])
 
     def test_liuqin_rule(self):
@@ -111,6 +112,9 @@ class TestLiuQin(unittest.TestCase):
         self.assertEqual(liuyao._liuqin("金", "土"), "父母")
         self.assertEqual(liuyao._liuqin("金", "火"), "官鬼")
         self.assertEqual(liuyao._liuqin("金", "金"), "兄弟")
+
+    def test_zhi_wuxing_uses_paipan_single_source(self):
+        self.assertIs(liuyao.ZHI_WUXING, paipan.ZHI_WUXING)
 
 
 class TestDongBian(unittest.TestCase):
@@ -141,7 +145,7 @@ class TestLiuShen(unittest.TestCase):
     def test_jia_day_qinglong(self):
         # 2026-06-19 为甲子日：初爻青龙，顺排
         p = liuyao.build_pan([7] * 6, date=(2026, 6, 19))
-        self.assertEqual([l["六神"] for l in p["爻"]],
+        self.assertEqual([line["六神"] for line in p["爻"]],
                          ["青龙", "朱雀", "勾陈", "螣蛇", "白虎", "玄武"])
         self.assertEqual(p["日月"]["日辰"], "甲子")
 
@@ -154,6 +158,19 @@ class TestLiuShen(unittest.TestCase):
         p = liuyao.build_pan([7] * 6)
         self.assertNotIn("六神", p["爻"][0])
         self.assertNotIn("日月", p)
+
+    def test_zi_hour_school_is_explicit_and_recorded(self):
+        early = liuyao.build_pan([7] * 6, date=(2025, 12, 20, 23, 30), zi_sect=1)
+        midnight = liuyao.build_pan([7] * 6, date=(2025, 12, 20, 23, 30), zi_sect=2)
+        self.assertEqual((early["日月"]["日辰"], early["日月"]["旬空"]), ("甲子", "戌亥"))
+        self.assertEqual((midnight["日月"]["日辰"], midnight["日月"]["旬空"]), ("癸亥", "子丑"))
+        self.assertEqual(early["日月"]["子时流派"], 1)
+        self.assertEqual(midnight["日月"]["子时流派"], 2)
+
+    def test_default_zi_hour_school_equals_explicit_two(self):
+        default = liuyao.build_pan([7] * 6, date=(2025, 12, 20, 23, 30))
+        explicit = liuyao.build_pan([7] * 6, date=(2025, 12, 20, 23, 30), zi_sect=2)
+        self.assertEqual(default, explicit)
 
 
 class TestFromGua(unittest.TestCase):
@@ -205,6 +222,17 @@ class TestCli(unittest.TestCase):
         r = self._run("--yao", "787888", "--date", "2026", "2", "30")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("日期非法", r.stdout + r.stderr)
+
+    def test_cli_zi_sect_is_recorded_in_json(self):
+        r = self._run("--yao", "777777", "--date", "2025", "12", "20", "23", "30",
+                      "--zi-sect", "1", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["日月"]["子时流派"], 1)
+
+    def test_cli_default_zi_sect_is_two(self):
+        r = self._run("--yao", "777777", "--date", "2025", "12", "20", "23", "30", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["日月"]["子时流派"], 2)
 
 
 # ============================================================
@@ -286,6 +314,49 @@ class TestAuditFixesV110(unittest.TestCase):
         r = self._run("--yao", "787888", "--query", "问合作", "--json")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(json.loads(r.stdout)["query"], "问合作")
+
+
+class TestDocumentCastingExamples(unittest.TestCase):
+    """读真实教程，把铜钱记录和固定范例交给装卦引擎复核。"""
+
+    @classmethod
+    def setUpClass(cls):
+        from pathlib import Path
+        cls.document = (Path(_SCRIPTS).parent / "references" / "19_liuyao.md").read_text(encoding="utf-8")
+
+    def test_coin_back_counts_from_document_produce_expected_hexagrams(self):
+        import re
+        mapping = {int(backs): int(mark) for backs, mark in
+                   re.findall(r"([0-3]) 背\s*=\s*(?:老阳|少阳|少阴|老阴)\s*([6-9])", self.document)}
+        self.assertEqual(set(mapping), {0, 1, 2, 3})
+        # 一背为单（少阳），两背为拆（少阴），三背为重，三字为交。
+        cases = [([1] * 6, "乾为天", [], None),
+                 ([2] * 6, "坤为地", [], None),
+                 ([1, 3, 2, 2, 2, 2], "地泽临", [2], "地雷复"),
+                 ([0] * 6, "坤为地", [1, 2, 3, 4, 5, 6], "乾为天")]
+        for backs, name, moving, changed in cases:
+            with self.subTest(backs=backs):
+                pan = liuyao.build_pan([mapping[b] for b in backs])
+                self.assertEqual(pan["本卦"]["名"], name)
+                self.assertEqual(pan["动爻"], moving)
+                self.assertEqual(pan.get("变卦", {}).get("名"), changed)
+
+    def test_document_example_cli_matches_claimed_cast(self):
+        import re
+        import subprocess
+        example = self.document.split("## 六、装卦范例", 1)[1].split("## 七、", 1)[0]
+        match = re.search(r"摇得 `([6-9]{6})`", example)
+        self.assertIsNotNone(match)
+        result = subprocess.run(
+            [sys.executable, os.path.join(_SCRIPTS, "liuyao.py"), "--yao", match.group(1),
+             "--date", "2026", "6", "19", "--json"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        pan = json.loads(result.stdout)
+        self.assertEqual(pan["本卦"], {"名": "地泽临", "宫": "坤宫（土）", "世": 2, "应": 5})
+        self.assertEqual(pan["动爻"], [2])
+        self.assertEqual(pan["爻"][1]["干支"], "丁卯")
+        self.assertEqual(pan["变卦"]["名"], "地雷复")
+        self.assertEqual(pan["日月"]["日辰"], "甲子")
 
 
 if __name__ == "__main__":

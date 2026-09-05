@@ -68,9 +68,12 @@
 
 ```bash
 python3 scripts/meihua.py --time 2020 3 15 14 30       # 时间起卦（公历，自动换农历取数；晚子时口径见 --zi-sect）
+python3 scripts/meihua.py --time 2020 6 29 14 30 --lunar  # 农历时间起卦，小月与闰月会先校验
 python3 scripts/meihua.py --numbers 34 43              # 数字起卦（上数 下数）
 python3 scripts/meihua.py --gua 2 3 1 --query "求职"    # 直接给 上卦数 下卦数 动爻
 ```
+
+`--lunar` 与 `--zi-sect` 是时间起卦专属参数，只能和 `--time` 一起使用；数字起卦与直接指定卦不接收这两个时间口径，避免看似生效、实际被忽略。
 
 脚本输出：本卦 / 互卦 / 变卦 + 体用定位 + 用互变对体的五行生克 + 体用类象 + 趋势化断语提示。生克是可计算的事实，深断（结合类象、卦气、应期、所占之事）靠本篇方法论。
 

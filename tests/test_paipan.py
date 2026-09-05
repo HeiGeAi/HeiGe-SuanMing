@@ -284,6 +284,16 @@ class TestShenShaDeterminism(unittest.TestCase):
             self.assertEqual(labs, sorted(labs, key=lambda x: order[x]),
                              f"{name} 柱标未按年月日时排序")
 
+    def test_all_emitted_names_are_registered(self):
+        samples = [
+            [('庚', '午'), ('辛', '巳'), ('庚', '辰'), ('癸', '未')],
+            [('丁', '卯'), ('壬', '寅'), ('甲', '子'), ('乙', '丑')],
+            [('甲', '辰'), ('丙', '子'), ('丁', '巳'), ('戊', '申')],
+        ]
+        for pillars in samples:
+            with self.subTest(pillars=pillars):
+                self.assertLessEqual(set(paipan.compute_shensha(pillars)), set(paipan.SHENSHA_ORDER))
+
     def test_output_invariant_across_hash_seeds(self):
         # 子进程分别用不同 PYTHONHASHSEED 跑同一命盘，输出必须逐字节一致
         import subprocess
@@ -345,6 +355,27 @@ class TestTrueSolarTime(unittest.TestCase):
         # 经度 130 > 120，校正应为正
         _, delta = paipan.true_solar_time(datetime(1990, 5, 15, 14, 30), 130.0, 8.0)
         self.assertGreater(delta, 0)
+
+    def test_date_line_equivalent_meridians_use_shortest_longitude_delta(self):
+        dt = datetime(1990, 5, 15, 14, 30)
+        expected_time, expected_delta = paipan.true_solar_time(dt, 0, 0)
+        for lng, tz in ((-150, 14), (180, -12)):
+            with self.subTest(lng=lng, tz=tz):
+                actual_time, actual_delta = paipan.true_solar_time(dt, lng, tz)
+                self.assertEqual(actual_delta, expected_delta)
+                self.assertEqual(actual_time, expected_time)
+
+    def test_longitude_delta_uses_half_open_antipode_interval(self):
+        dt = datetime(1990, 5, 15, 14, 30)
+        _, expected_delta = paipan.true_solar_time(dt, 0, 0)
+        _, before = paipan.true_solar_time(dt, 179.999, 0)
+        _, at_positive = paipan.true_solar_time(dt, 180, 0)
+        _, at_negative = paipan.true_solar_time(dt, -180, 0)
+        _, after = paipan.true_solar_time(dt, 180.001, 0)
+        self.assertGreater(before, 700)
+        self.assertEqual(at_positive, round(expected_delta - 720, 1))
+        self.assertEqual(at_negative, round(expected_delta - 720, 1))
+        self.assertLess(after, -700)
 
 
 # ============================================================
@@ -869,10 +900,16 @@ class TestPartnerValidation(unittest.TestCase):
 
     def test_partner_lunar_flag(self):
         # --partner-lunar 时乙方按农历解释（农历 1992-08-15 = 公历 1992-09-11，日柱庚寅）
-        r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
-                      "--partner", "1992", "8", "15", "10", "--partner-lunar")
+        argv = ("1990", "5", "15", "14", "30", "--gender", "male",
+                "--partner", "1992", "8", "15", "10", "--partner-lunar")
+        r = self._run(*argv)
         self.assertEqual(r.returncode, 0)
         self.assertIn("农历输入", r.stdout)
+        json_result = self._run(*argv, "--json")
+        self.assertEqual(json_result.returncode, 0, json_result.stderr)
+        payload = json.loads(json_result.stdout)
+        self.assertEqual(payload["partner_input"]["calendar"], "农历")
+        self.assertEqual(payload["partner_calendar"], "农历")
 
     def test_partner_dst_note_passthrough(self):
         # B8：乙方生于夏令时期须提示
@@ -1030,7 +1067,7 @@ class TestAuditTimeAndYearBoundaries(unittest.TestCase):
 
     def test_true_solar_correction_cannot_escape_supported_years(self):
         with self.assertRaisesRegex(ValueError, "校正后.*年份"):
-            paipan.build_chart(make_args(1600, 1, 1, 0, 0, lng=-180, tz=8))
+            paipan.build_chart(make_args(1600, 1, 1, 0, 0, lng=-60, tz=8))
 
     def test_lunar_conversion_cannot_escape_supported_years(self):
         with self.assertRaisesRegex(ValueError, "转换后.*年份"):
@@ -1130,12 +1167,198 @@ class TestAuditReusableApiAndPartnerFlags(unittest.TestCase):
         self.assertEqual(ok.returncode, 0, ok.stderr)
         self.assertIn("夏令时", json.loads(ok.stdout)["partner_dst_note"])
 
+    def test_orphan_partner_location_options_rejected(self):
+        for flag, value in (('--partner-lng', '-74'), ('--partner-tz', '-5')):
+            with self.subTest(flag=flag):
+                r = self._run('1990', '5', '15', '14', '30', '--gender', 'male',
+                              flag, value)
+                self.assertNotEqual(r.returncode, 0)
+                self.assertIn('须与 --partner 一起使用', r.stderr + r.stdout)
+
+    def test_overseas_partner_matches_standalone_chart_at_term_boundary(self):
+        r = self._run('1990', '5', '15', '14', '30', '--gender', 'male', '--json',
+                      '--partner', '2024', '2', '4', '3', '45',
+                      '--partner-gender', 'female', '--partner-lng', '-74',
+                      '--partner-tz', '-5')
+        self.assertEqual(r.returncode, 0, r.stderr)
+        payload = json.loads(r.stdout)
+        standalone = paipan.build_chart(make_args(
+            2024, 2, 4, 3, 45, gender='female', lng=-74.0, tz=-5.0,
+        ))
+        self.assertEqual(payload['partner_pillars'], standalone['pillars'])
+        self.assertEqual(payload['partner_input'], standalone['input'])
+        self.assertEqual(payload['partner_input']['calendar'], '公历')
+        self.assertEqual(payload['partner_input']['tz'], -5.0)
+        self.assertEqual(payload['partner_input']['lng'], -74.0)
+
+    def test_unknown_hour_partner_has_three_pillars_and_no_precise_yun(self):
+        argv = ('1990', '5', '15', '14', '30', '--gender', 'male',
+                '--partner', '1992', '8', '15')
+        r = self._run(*argv, '--json')
+        self.assertEqual(r.returncode, 0, r.stderr)
+        payload = json.loads(r.stdout)
+        self.assertEqual(list(payload['partner_pillars']), ['年', '月', '日'])
+        self.assertFalse(payload['partner_input']['hour_known'])
+        self.assertIsNone(payload['partner_yun'])
+        self.assertEqual(payload['partner_input']['tz'], 8.0)
+        self.assertIsNone(payload['partner_input']['lng'])
+        text_result = self._run(*argv)
+        self.assertEqual(text_result.returncode, 0, text_result.stderr)
+        self.assertIn('乙方三柱', text_result.stdout)
+        self.assertNotIn('None岁起运', text_result.stdout)
+
+    def test_both_unknown_hours_keep_both_three_pillar_charts(self):
+        r = self._run('1990', '5', '15', '--gender', 'male', '--json',
+                      '--partner', '1992', '8', '15')
+        self.assertEqual(r.returncode, 0, r.stderr)
+        payload = json.loads(r.stdout)
+        self.assertEqual(list(payload['pillars']), ['年', '月', '日'])
+        self.assertEqual(list(payload['partner_pillars']), ['年', '月', '日'])
+        self.assertTrue(payload['compatibility'])
+
     def test_partner_lunar_missing_dependency_has_no_traceback(self):
         r = self._run("1990", "5", "15", "14", "30", "--gender", "male",
                       "--partner", "1992", "8", "15", "10", "--partner-lunar", no_site=True)
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("缺少依赖 lunar_python", r.stderr + r.stdout)
         self.assertNotIn("Traceback", r.stderr)
+
+
+class TestReviewFixes(unittest.TestCase):
+    def _cli(self, *argv):
+        import subprocess
+        return subprocess.run(
+            [sys.executable, os.path.join(_SCRIPTS, "paipan.py"), *argv],
+            capture_output=True, text=True,
+        )
+
+    def test_si_shen_preserves_both_union_and_punishment(self):
+        for a, b in (("巳", "申"), ("申", "巳")):
+            with self.subTest(order=(a, b)):
+                relation = paipan._zhi_pair_desc(a, b)
+                self.assertIn(f"{a}{b} 六合（合水）", relation)
+                self.assertIn("相刑", relation)
+        self.assertEqual(paipan._zhi_pair_desc("寅", "巳"), "寅巳 相刑兼相害")
+        self.assertEqual(paipan._zhi_pair_desc("子", "丑"), "子丑 六合（合土）")
+
+    def test_unknown_hour_includes_last_second_of_local_term_day(self):
+        # 惊蛰北京时间18:14:51，即 UTC+13:45 当日23:59:51。
+        c = paipan.build_chart(make_args(2013, 3, 5, tz=13.75))
+        self.assertEqual(c["input"]["pillar_uncertainty"].get("月"), ["甲寅", "乙卯"])
+        self.assertIn("当日交节", c["input"]["limitations"])
+
+    def test_timezone_conversion_preserves_seconds_at_lichun(self):
+        # UTC+7.99的16:27对应北京时间16:27:36，晚于立春16:27:07。
+        c = paipan.build_chart(make_args(2024, 2, 4, 16, 27, tz=7.99))
+        self.assertEqual((c["pillars"]["年"], c["pillars"]["月"]), ("甲辰", "丙寅"))
+        self.assertEqual(c["input"]["solar_term_time"], "2024-02-04 16:27:36 UTC+8")
+
+    def test_default_liunian_year_respects_exact_lichun_second(self):
+        self.assertEqual(paipan.liunian_start_year(datetime(2024, 2, 4, 16, 27, 6)), 2023)
+        self.assertEqual(paipan.liunian_start_year(datetime(2024, 2, 4, 16, 27, 7)), 2024)
+
+    def test_complete_partner_chart_matches_standalone_and_keeps_aliases(self):
+        r = self._cli("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner", "2024", "2", "4", "3", "45",
+                      "--partner-gender", "female", "--partner-lng", "-74",
+                      "--partner-tz", "-5", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        payload = json.loads(r.stdout)
+        self.assertIn("partner_chart", payload)
+        partner = payload["partner_chart"]
+        expected = paipan.build_chart(make_args(2024, 2, 4, 3, 45,
+                                                 gender="female", lng=-74.0, tz=-5.0))
+        self.assertEqual(partner, expected)
+        self.assertEqual(payload["partner_input"], partner["input"])
+        self.assertEqual(payload["partner_pillars"], partner["pillars"])
+        self.assertTrue(partner["dayun"])
+        self.assertNotIn("partner_chart", partner)
+
+    def test_text_displays_two_complete_labeled_charts_once(self):
+        r = self._cli("1990", "5", "15", "14", "30", "--gender", "male",
+                      "--partner", "1992", "8", "20", "10", "30",
+                      "--partner-gender", "female")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.count("【甲方命盘】"), 1)
+        self.assertEqual(r.stdout.count("【乙方命盘】"), 1)
+        self.assertEqual(r.stdout.count("【五行力量】"), 2)
+        self.assertEqual(r.stdout.count("【大运】"), 2)
+        self.assertEqual(r.stdout.count("【合婚双盘对照】"), 1)
+
+    def test_complete_unknown_partner_keeps_uncertainty_and_no_fabricated_yun(self):
+        r = self._cli("1990", "5", "15", "--gender", "male",
+                      "--partner", "2013", "3", "5", "--partner-tz", "13.75", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        payload = json.loads(r.stdout)
+        self.assertIn("partner_chart", payload)
+        partner = payload["partner_chart"]
+        self.assertEqual(list(partner["pillars"]), ["年", "月", "日"])
+        self.assertEqual(partner["dayun"], [])
+        self.assertIsNone(partner["start_solar"])
+        self.assertIsNone(partner["minggong"])
+        self.assertEqual(partner["input"]["pillar_uncertainty"].get("月"), ["甲寅", "乙卯"])
+
+    def test_lunar_previous_year_converting_inside_solar_range_is_supported(self):
+        r = self._cli("1599", "12", "1", "12", "--gender", "male", "--lunar", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        c = json.loads(r.stdout)
+        expected = paipan.build_chart(make_args(1600, 1, 16, 12))
+        self.assertEqual(c["pillars"], expected["pillars"])
+        self.assertEqual(c["input"]["solar"], "1600-01-16 12:00")
+
+    def test_partner_lunar_previous_year_converting_inside_range_is_supported(self):
+        r = self._cli("1990", "5", "15", "--gender", "male",
+                      "--partner", "1599", "12", "1", "--partner-lunar", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["partner_input"]["solar"], "1600-01-16（时辰未知）")
+
+    def test_lunar_previous_year_still_rejects_dates_outside_solar_range(self):
+        r = self._cli("1599", "1", "1", "12", "--gender", "male", "--lunar")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("转换后的公历年份超出支持范围", r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+
+
+class TestPunishmentRelationConsistency(unittest.TestCase):
+    """同一对地支在原局、流日引动与合婚中保留相同的冲刑事实。"""
+
+    def test_opposition_does_not_hide_punishment_in_either_order(self):
+        for a, b in (("寅", "申"), ("申", "寅"), ("丑", "未"), ("未", "丑")):
+            with self.subTest(pair=a + b):
+                relation = paipan._zhi_pair_desc(a, b)
+                self.assertIn("相冲", relation)
+                self.assertIn("相刑", relation)
+                hits = paipan._zhi_vs_natal(a, [b])
+                self.assertIn(f"冲年{b}", hits)
+                self.assertIn(f"刑年{b}", hits)
+
+    def _check_cli_pair(self, birth_year, month, partner_year, natal_zhi, outer_zhi):
+        import subprocess
+        r = subprocess.run(
+            [sys.executable, os.path.join(_SCRIPTS, "paipan.py"),
+             str(birth_year), str(month), "15", "12", "--gender", "male",
+             "--partner", str(partner_year), str(month), "15", "12",
+             "--target-date", str(partner_year), str(month), "15", "--json"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        c = json.loads(r.stdout)
+        self.assertEqual(c["pillars"]["年"][1], natal_zhi)
+        self.assertEqual(c["pillars"]["月"][1], outer_zhi)
+        self.assertTrue(any(f"年{natal_zhi}·月{outer_zhi}" in value
+                            for value in c["zhi_relations"]["相刑"]))
+        self.assertIn("相冲", c["compatibility"]["生肖(年支)"])
+        self.assertIn("相刑", c["compatibility"]["生肖(年支)"])
+        for key in ("流年", "流月"):
+            self.assertEqual(c["target_date"][key]["ganzhi"][1], outer_zhi)
+            self.assertIn(f"冲年{natal_zhi}", c["target_date"][key]["vs_natal"])
+            self.assertIn(f"刑年{natal_zhi}", c["target_date"][key]["vs_natal"])
+
+    def test_yin_shen_cli_preserves_both_relations_across_sections(self):
+        self._check_cli_pair(1986, 8, 1992, "寅", "申")
+
+    def test_chou_wei_cli_preserves_both_relations_across_sections(self):
+        self._check_cli_pair(1985, 7, 1991, "丑", "未")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,29 @@
 <!DOCTYPE html>
+<!--
+Reading components adapt the noir-vermilion tokens of HeiGe-Design.
+https://github.com/HeiGeAi/HeiGe-Design
+MIT License
+
+Copyright (c) 2026 HeiGeAi (Blake Xu)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -36,6 +61,14 @@
   /* 拉丁数字与英文小标：Cormorant 优先，Georgia 兜底 */
   --num:'Cormorant Garamond','Songti SC',Georgia,'Times New Roman',serif;
   --gutter:clamp(18px,4vw,40px);
+  /* Reading controls: HeiGe-Design noir-vermilion (MIT), scoped to the manuscript index. */
+  --reader-canvas:#141210;
+  --reader-paper:#edeae3;
+  --reader-muted:#9a9082;
+  --reader-rule:#34302b;
+  --reader-accent:#ce1432;
+  --reader-font:'Inter','PingFang SC','Microsoft YaHei',sans-serif;
+  --reader-num:'Playfair Display','Bodoni 72','Didot',Georgia,serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{
@@ -45,7 +78,6 @@ body{
   line-height:1.95;
   font-weight:300;
   letter-spacing:.02em;
-  overflow-x:hidden;
   position:relative;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
@@ -82,20 +114,20 @@ body::after{
 }
 .hero .seal::after{content:'';position:absolute;inset:-7px;border-radius:9px;box-shadow:0 0 30px rgba(187,66,50,.45);opacity:.45}
 .hero .pre{font-family:var(--kai);font-size:15px;letter-spacing:.5em;color:var(--gold);margin-bottom:24px;padding-left:.5em}
-.hero h1{font-family:var(--brush);font-size:clamp(78px,17vw,170px);font-weight:900;line-height:.92;color:var(--paper);text-shadow:0 0 56px rgba(217,115,51,.32);white-space:nowrap;letter-spacing:.04em}
+.hero h1{font-family:var(--brush);font-size:clamp(40px,17vw,170px);font-weight:900;line-height:.92;color:var(--paper);text-shadow:0 0 56px rgba(217,115,51,.32);white-space:nowrap;letter-spacing:.04em}
 .hero .name{font-family:var(--kai);font-size:clamp(20px,4vw,28px);letter-spacing:.5em;color:var(--gold-bright);margin:30px 0 10px;padding-left:.5em}
 .hero .birth{font-family:var(--num);font-size:17px;letter-spacing:.06em;color:var(--paper-dim);font-style:italic}
 .hero .verse{margin-top:42px;max-width:560px;font-family:var(--kai);font-size:clamp(16px,3vw,20px);color:var(--paper);line-height:2.25;opacity:.94;text-wrap:balance}
 .hero .verse b{color:var(--fire);font-weight:400}
-.hero .scroll-cue{position:absolute;bottom:38px;left:50%;transform:translateX(-50%);font-family:var(--kai);font-size:12px;letter-spacing:.4em;color:var(--paper-faint);writing-mode:vertical-rl;padding-left:.4em}
+.hero .scroll-cue{position:absolute;bottom:48px;right:56px;font-family:var(--kai);font-size:12px;letter-spacing:.4em;color:var(--paper-faint);writing-mode:vertical-rl;padding-left:.4em;text-decoration:none}
 .hero .scroll-cue::after{content:'';display:block;width:1px;height:42px;background:linear-gradient(var(--gold),transparent);margin:14px auto 0}
 
 /* ============ 通用 section ============ */
 section{padding:76px 0;position:relative}
-.sec-head{display:flex;align-items:baseline;gap:22px;margin-bottom:46px}
+.sec-head{min-width:0;display:flex;align-items:baseline;gap:22px;margin-bottom:46px}
 .sec-no{font-family:var(--brush);font-size:clamp(46px,8vw,68px);color:var(--gold-deep);line-height:.9;opacity:.85;flex:none}
 .sec-title{font-family:var(--kai);font-size:clamp(26px,5vw,38px);color:var(--paper);letter-spacing:.1em;text-wrap:balance}
-.sec-sub{font-family:var(--num);font-size:14px;color:var(--gold);letter-spacing:.28em;margin-top:6px;text-transform:uppercase;font-style:italic}
+.sec-sub{overflow-wrap:anywhere;font-family:var(--num);font-size:14px;color:var(--gold);letter-spacing:.28em;margin-top:6px;text-transform:uppercase;font-style:italic}
 .divider{display:flex;align-items:center;justify-content:center;gap:18px;margin:0;color:var(--gold-deep)}
 .divider::before,.divider::after{content:'';height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--line),transparent)}
 .divider span{font-family:var(--kai);font-size:15px;letter-spacing:.34em;color:var(--gold)}
@@ -114,7 +146,7 @@ strong{color:var(--gold-bright);font-weight:600}
 .heige-read p{margin:10px 0 0;font-size:15px;line-height:1.9;color:var(--paper-dim)}
 
 /* 依据标签 */
-.basis{display:inline-block;font-family:var(--num);font-size:12.5px;color:var(--jade-bright);background:rgba(94,132,120,.1);border:1px solid rgba(94,132,120,.28);border-radius:3px;padding:2px 10px;margin:0 2px;letter-spacing:.04em;white-space:nowrap;font-style:italic}
+.basis{display:inline-block;font-family:var(--num);font-size:12.5px;color:var(--jade-bright);background:rgba(94,132,120,.1);border:1px solid rgba(94,132,120,.28);border-radius:3px;padding:2px 10px;margin:0 2px;letter-spacing:.04em;white-space:normal;overflow-wrap:anywhere;max-width:100%;font-style:italic}
 
 /* ============ 四柱命盘 ============ */
 .chart{border:1px solid var(--line);background:linear-gradient(160deg,rgba(28,25,34,.9),rgba(12,11,14,.78))}
@@ -152,7 +184,7 @@ strong{color:var(--gold-bright);font-weight:600}
 .wx-empty{color:var(--cinnabar-bright);font-style:normal;font-family:var(--kai);font-size:13px;letter-spacing:.08em}
 
 /* ============ 卡片网格 ============ */
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line-soft);border:1px solid var(--line);margin-top:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:1px;background:var(--line-soft);border:1px solid var(--line);margin-top:8px}
 .card{background:var(--ink);padding:30px 26px}
 .card h4{font-family:var(--kai);font-size:18px;color:var(--gold-bright);letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:10px}
 .card h4 i{font-style:normal;font-family:var(--brush);font-size:30px;color:var(--gold-deep);line-height:1}
@@ -276,10 +308,58 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 .sec-title,.card h4{font-weight:600}
 .hero .name,.hero .pre,.divider span,.chart thead th,.final .eight,.av .k,.step .badge,.yr .dot,.tiangan-deco{font-weight:500}
 .hero .verse,.hero .scroll-cue,.lead,.chart .rowlabel,.sig-caption p,.wx-empty{font-weight:400}
+
+/* Scoped reading UI. Native anchors keep offline, keyboard and no-JS reading available. */
+[id]{scroll-margin-top:76px}
+a:focus-visible{outline:2px solid var(--reader-paper);outline-offset:4px}
+.skip-link{position:fixed;top:12px;left:12px;z-index:20;padding:12px 20px;background:var(--reader-paper);color:var(--reader-canvas);transform:translateY(-200%)}
+.skip-link:focus{transform:translateY(0)}
+.hero-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:20px}
+.hero-links a{display:inline-flex;align-items:center;min-height:44px;padding:6px 16px;border:1px solid var(--line);color:var(--paper);font-size:14px;text-decoration:none}
+.hero-links a:hover{border-color:var(--gold);background:var(--ink-2)}
+.reading-index{position:relative;margin:88px 0 48px;padding:76px 32px 32px;background:var(--reader-paper);color:var(--reader-canvas);box-shadow:0 12px 32px #0003;font-family:var(--reader-font)}
+.reading-number{position:absolute;top:-46px;left:24px;color:var(--reader-accent);font-family:var(--reader-num);font-size:120px;line-height:1;font-weight:500;pointer-events:none}
+.reading-index h2{font-family:var(--serif);font-size:clamp(24px,4vw,34px);font-weight:700;line-height:1.4}
+.reading-index h2::after{content:'';display:block;width:48px;height:8px;background:var(--reader-accent);margin:20px 0}
+.reading-index p{color:var(--reader-canvas);font-family:var(--reader-font);font-size:15px;font-weight:400;line-height:1.75;margin-bottom:24px}
+.reading-index ol{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px}
+.reading-index li{border-top:1px solid #14121033}
+.reading-index a{position:relative;display:block;padding:16px 0;min-height:44px;font-size:17px;color:var(--reader-canvas);font-weight:600;text-decoration:none}
+.reading-index a::after{content:'';position:absolute;bottom:8px;left:0;width:48px;height:2px;background:var(--reader-accent);transform:scaleX(0);transform-origin:left;transition:transform 220ms cubic-bezier(.22,1,.36,1)}
+.reading-index a:hover::after,.reading-index a:focus-visible::after{transform:scaleX(1)}
+.reading-index a:focus-visible{outline-color:var(--reader-canvas)}
+.reading-index a span{display:block;font-size:13px;font-weight:400;color:var(--reader-rule);margin-top:4px}
+.reading-index .reading-tip{margin:20px 0 0;padding-top:20px;border-top:1px solid #14121033;font-size:13px}
+.reading-tools{width:calc(100% - var(--gutter) - var(--gutter));max-width:calc(920px - var(--gutter) - var(--gutter));margin:0 auto;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;gap:4px;padding:8px;background:var(--reader-canvas);border:1px solid var(--reader-rule);font-family:var(--reader-font)}
+.reading-tools a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 12px;color:var(--reader-paper);font-size:14px;text-decoration:none}
+.reading-tools a:hover{box-shadow:inset 0 -2px var(--reader-accent)}
+@media(prefers-reduced-motion:reduce){.reading-index a::after{transition:none}}
+@media(max-width:680px){
+  .hero{padding:56px 18px 40px}
+  .hero .pre{font-size:13px;letter-spacing:.25em}
+  .hero .name{letter-spacing:.25em}
+  .hero .verse{margin-top:28px}
+  .hero .scroll-cue{position:static;transform:none;writing-mode:horizontal-tb;letter-spacing:.15em;margin-top:24px;min-height:44px;display:flex;align-items:center;color:var(--paper-dim)}
+  .hero .scroll-cue::after{display:none}
+  .reading-index{padding:72px 20px 24px}
+  .reading-index ol{column-gap:16px}
+  .reading-tools a{padding:4px 8px}
+}
+@media(max-width:360px){.reading-index ol{grid-template-columns:1fr}}
+@media print{
+  .skip-link,.hero-links,.reading-index,.reading-tools{display:none!important}
+  [id]{scroll-margin-top:0}
+  .sec-head,h2,h3,h4{break-after:avoid}
+  .heige-read,.card,.av,.yr{break-inside:avoid}
+  .chart tr{break-inside:avoid}
+  .hero{break-after:page}
+}
+
 </style>
 </head>
-<body>
-<div class="tiangan-deco">甲乙丙丁戊己庚辛壬癸</div>
+<body id="top">
+<a class="skip-link" href="#reading-index">跳到阅读目录</a>
+<div class="tiangan-deco" aria-hidden="true">甲乙丙丁戊己庚辛壬癸</div>
 
 <!-- ============ 卷首 ============ -->
 <header class="hero">
@@ -289,18 +369,41 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
   <h1>我的一生</h1>
   <div class="name">示例命主 · 命书</div>
   <div class="birth">公历 1986 年 6 月 22 日 · 午时（虚拟生辰）</div>
+  <div class="hero-links"><a href="#chart">直接看命盘</a><a href="#reading-index">选择章节</a></div>
   <div class="verse">一炉<b>丁火</b>，生于盛夏正午，<br>月时双禄，寅午合火，<br>两丙帮身而<b>满盘无水</b>。<br>此命之钥，尽在「<b>旺极缺水</b>」四字。</div>
-  <div class="scroll-cue">向下展卷</div>
+  <a class="scroll-cue" href="#reading-index" aria-label="选择命书章节">向下展卷</a>
 </header>
 
+<main id="report">
+<div class="wrap">
+<nav class="reading-index" id="reading-index" aria-labelledby="reading-title">
+  <span class="reading-number" aria-hidden="true">01</span>
+  <h2 id="reading-title">从你关心的地方读起</h2>
+  <p>第一次看，可以顺着往下读。回来查阅时，直接选择章节。</p>
+  <ol>
+    <li><a href="#overview">一图读懂<span>先看全盘主线</span></a></li>
+    <li><a href="#chart">命盘全图<span>核对生辰与四柱</span></a></li>
+    <li><a href="#elements">五行分布<span>查看盘面数据</span></a></li>
+    <li><a href="#useful">用神喜忌<span>理解分析依据</span></a></li>
+    <li><a href="#luck">大运流年<span>查看阶段与年份</span></a></li>
+    <li><a href="#details">分维度解读<span>事业、关系与生活</span></a></li>
+    <li><a href="#advice">实用清单<span>回看具体建议</span></a></li>
+    <li><a href="#summary">综合总评<span>收束整份命书</span></a></li>
+  </ol>
+  <p class="reading-tip">保存后可继续阅读；需要纸质版，可使用浏览器的打印功能。</p>
+</nav>
+</div>
+<nav class="reading-tools" aria-label="阅读工具">
+  <a href="#reading-index">目录</a><a href="#chart">命盘</a><a href="#summary">总评</a><a href="#top">卷首 ↑</a>
+</nav>
 <div class="wrap">
 
 <!-- ============ 一图读懂 ============ -->
-<section>
+<section id="overview" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">壹</div>
     <div>
-      <div class="sec-title">先用一个画面看懂全盘</div>
+      <h2 class="sec-title">先用一个画面看懂全盘</h2>
       <div class="sec-sub">The Whole Chart in One Image</div>
     </div>
   </div>
@@ -311,11 +414,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 命盘全图 ============ -->
-<section>
+<section id="chart" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">貳</div>
     <div>
-      <div class="sec-title">命盘全图</div>
+      <h2 class="sec-title">命盘全图</h2>
       <div class="sec-sub">The Four Pillars</div>
     </div>
   </div>
@@ -351,11 +454,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 五行能量 ============ -->
-<section>
+<section id="elements" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">參</div>
     <div>
-      <div class="sec-title">五行能量分布</div>
+      <h2 class="sec-title">五行能量分布</h2>
       <div class="sec-sub">The Five Elements</div>
     </div>
   </div>
@@ -372,11 +475,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 旺衰 ============ -->
-<section>
+<section id="strength" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">肆</div>
     <div>
-      <div class="sec-title">这团火有多旺</div>
+      <h2 class="sec-title">这团火有多旺</h2>
       <div class="sec-sub">Strength of the Day Master</div>
     </div>
   </div>
@@ -394,11 +497,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 用神 ============ -->
-<section>
+<section id="useful" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">伍</div>
     <div>
-      <div class="sec-title">这盘最该补什么</div>
+      <h2 class="sec-title">这盘最该补什么</h2>
       <div class="sec-sub">The Pivotal Element</div>
     </div>
   </div>
@@ -417,7 +520,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </div>
 
 <!-- ============ 签名时刻 · 五火独缺一水 ============ -->
-<section class="signature reveal">
+<section class="signature reveal" aria-label="命局意象">
   <div class="sig-stage">
     <span class="ember e1">火</span>
     <span class="ember e2">火</span>
@@ -436,11 +539,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 <div class="wrap">
 
 <!-- ============ 格局 ============ -->
-<section>
+<section id="structure" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">陸</div>
     <div>
-      <div class="sec-title">靠什么立身</div>
+      <h2 class="sec-title">靠什么立身</h2>
       <div class="sec-sub">The Structure</div>
     </div>
   </div>
@@ -452,11 +555,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 大运 ============ -->
-<section>
+<section id="luck" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">柒</div>
     <div>
-      <div class="sec-title">十年大运 · 一生大势</div>
+      <h2 class="sec-title">十年大运 · 一生大势</h2>
       <div class="sec-sub">The Decade Cycles</div>
     </div>
   </div>
@@ -476,7 +579,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
     </div>
     <div class="step bad">
       <span class="gz">戊戌</span><span class="age">36 – 45 岁　2021 起</span><span class="badge b-bad">火局大坎 · 最需谨慎</span>
-      <div class="desc">天干戊土伤官本能泄秀生金，是好事；坏在地支：<span class="fire">大运的戌一进来，和盘里的寅、午凑成完整的寅午戌三合大火局</span>，火烧到顶、戌火库被引爆。星运逢「墓」。<b>这十年火旺攻身（心血管、血压、眼目）、财被火熔（破耗）、脾气易上头、合伙易起纠纷，是全局最大一道坎。</b></div>
+      <div class="desc">天干戊土伤官本能泄秀生金，是好事；坏在地支：<span class="fire">大运的戌一进来，和盘里的寅、午凑成完整的寅午戌三合大火局</span>，火烧到顶、戌火库被引爆。星运逢「养」。<b>这十年火旺攻身（心血管、血压、眼目）、财被火熔（破耗）、脾气易上头、合伙易起纠纷，是全局最大一道坎。</b></div>
     </div>
     <div class="step peak">
       <span class="gz">己亥</span><span class="age">46 – 55 岁　2031 起</span><span class="badge b-peak">晚运回甘 · 黄金转折</span>
@@ -500,11 +603,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 流年 ============ -->
-<section>
+<section id="years" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">捌</div>
     <div>
-      <div class="sec-title">近十年流年 · 逐年</div>
+      <h2 class="sec-title">近十年流年 · 逐年</h2>
       <div class="sec-sub">Year by Year · 2026–2035</div>
     </div>
   </div>
@@ -525,11 +628,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 分维度详断 ============ -->
-<section>
+<section id="details" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">玖</div>
     <div>
-      <div class="sec-title">分维度详断</div>
+      <h2 class="sec-title">分维度详断</h2>
       <div class="sec-sub">Life Dimensions in Detail</div>
     </div>
   </div>
@@ -588,11 +691,11 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 趋避 ============ -->
-<section>
+<section id="advice" tabindex="-1">
   <div class="sec-head reveal">
     <div class="sec-no">拾</div>
     <div>
-      <div class="sec-title">趋吉避凶 · 实用清单</div>
+      <h2 class="sec-title">趋吉避凶 · 实用清单</h2>
       <div class="sec-sub">Practical Guidance</div>
     </div>
   </div>
@@ -630,7 +733,7 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 </section>
 
 <!-- ============ 总评 ============ -->
-<section>
+<section id="summary" tabindex="-1" aria-label="综合总评">
   <div class="final reveal">
     <p>丁火生午月建禄，寅午半合、双午自刑、两丙帮身而满盘无水。这是一座<strong>生在盛夏正午、烧得最旺却独缺一瓢水的火炉</strong>：聪明、有文采（正印文昌）、有威仪（将星）、行动力猛、同辈缘旺，又与财有缘（日坐财星长生）。</p>
     <p>这盘的两块软肋，是<strong>火炎易躁伤身（护心血管）</strong>和<strong>比劫争财、桃花动（守财、专情）</strong>，都和「火太旺、缺水来调」有关。出身有正印与贵人的底子，是一张典型的<strong>晚发</strong>盘：早年积累、中年一坎、晚运三十年金水连珠才真正回甘。</p>
@@ -643,12 +746,14 @@ footer .date{font-family:var(--num);font-size:13px;color:var(--paper-faint);lett
 
 </div>
 
+</main>
+
 <!-- ============ 页脚 ============ -->
 <footer>
   <p class="disc">本报告是传统文化研究与自我认知参考，非预言或保证，不承诺改运消灾。命理讲的是倾向与概率，真碰上结婚、健康、大笔投资这类大事，请把它当一个参考维度，最终结合现实理性拍板。本盘采用虚拟生辰，由精确排盘脚本推算，方法论遵循「先定旺衰用神、再断一切」，每条断语皆标依据，孤证不立。</p>
   <div class="sig-stamp">八字一卷 · 示例</div>
   <div class="date">八字命理 SKILL · 可视化示例</div>
-  <div class="date">排盘引擎 v1.4.0</div>
+  <div class="date">排盘引擎 v1.5.0</div>
 </footer>
 
 </body>

@@ -32,7 +32,7 @@ import json
 import math
 from datetime import datetime, timedelta, timezone
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 
 # 支持的公历年份范围（lunar_python 节气与历表精度有保证的区间）
 YEAR_MIN, YEAR_MAX = 1600, 2200
@@ -79,9 +79,9 @@ ZHI_HAI = [frozenset("子未"), frozenset("丑午"), frozenset("寅巳"),
 XING3_A = set("寅巳申")   # 无恩之刑
 XING3_B = set("丑戌未")   # 恃势之刑
 XING_ZI = "辰午酉亥"      # 自刑（按固定次序遍历，保证输出顺序确定）
-# 两支相刑成对表（子卯无礼之刑 + 三刑的两两组合；寅申/丑未属六冲另计）
+# 两支相刑成对表（与原局三刑的两支半刑同口径；寅申、丑未同时计冲与刑）
 XING_PAIRS = [frozenset("子卯"), frozenset("寅巳"), frozenset("巳申"),
-              frozenset("丑戌"), frozenset("戌未")]
+              frozenset("寅申"), frozenset("丑戌"), frozenset("戌未"), frozenset("丑未")]
 
 
 def ten_god(day_gan, other_gan):
@@ -334,7 +334,8 @@ def true_solar_time(dt, lng, tz_offset):
     n = dt.timetuple().tm_yday
     b = math.radians(360.0 * (n - 81) / 364.0)
     eot = 9.87 * math.sin(2 * b) - 7.53 * math.cos(b) - 1.5 * math.sin(b)
-    delta = (lng - tz_offset * 15.0) * 4.0 + eot
+    longitude_delta = (lng - tz_offset * 15.0 + 180.0) % 360.0 - 180.0
+    delta = longitude_delta * 4.0 + eot
     return dt + timedelta(minutes=delta), round(delta, 1)
 
 
@@ -383,7 +384,7 @@ def liunian_start_year(dt):
     流年仍属上一干支年，起始年取 dt.year - 1。"""
     from lunar_python import Solar
     gz_now = Solar.fromYmdHms(dt.year, dt.month, dt.day, dt.hour,
-                              dt.minute, 0).getLunar().getEightChar().getYear()
+                              dt.minute, dt.second).getLunar().getEightChar().getYear()
     return dt.year if gz_now == liunian_ganzhi(dt.year) else dt.year - 1
 
 
@@ -460,23 +461,26 @@ def _zhi_pair_desc(za, zb):
         if za in XING_ZI:
             return f"同为 {za}（同气，带自刑）"
         return f"同为 {za}（同气）"
+    relations = []
     if pair in ZHI_LIUHE:
-        return f"{za}{zb} 六合（合{ZHI_LIUHE[pair]}）"
+        relations.append(f"{za}{zb} 六合（合{ZHI_LIUHE[pair]}）")
     for combo, wx in SANHE.items():
         if za in combo and zb in combo:
             # 与 detect_zhi_relations 同口径：含中神才算半合，无中神只作拱合
             if combo[1] in (za, zb):
-                return f"{za}{zb} 半合{wx}局"
-            return f"{za}{zb} 拱{wx}（无中神，联系弱）"
+                relations.append(f"{za}{zb} 半合{wx}局")
+            else:
+                relations.append(f"{za}{zb} 拱{wx}（无中神，联系弱）")
+            break
     if pair in ZHI_CHONG:
-        return f"{za}{zb} 相冲"
+        relations.append(f"{za}{zb} 相冲")
     if pair in XING_PAIRS and pair in ZHI_HAI:
-        return f"{za}{zb} 相刑兼相害"
-    if pair in XING_PAIRS:
-        return f"{za}{zb} 相刑"
-    if pair in ZHI_HAI:
-        return f"{za}{zb} 相害"
-    return f"{za} / {zb}（无合冲害刑）"
+        relations.append(f"{za}{zb} 相刑兼相害")
+    elif pair in XING_PAIRS:
+        relations.append(f"{za}{zb} 相刑")
+    elif pair in ZHI_HAI:
+        relations.append(f"{za}{zb} 相害")
+    return "，".join(relations) if relations else f"{za} / {zb}（无合冲害刑）"
 
 
 def compatibility(ca, cb):
@@ -499,7 +503,8 @@ def compatibility(ca, cb):
     res["生肖(年支)"] = _zhi_pair_desc(ya_z, yb_z)
     la, lb = ca.get("wuxing_lack", []), cb.get("wuxing_lack", [])
     res["五行缺"] = f"甲方缺 {('、'.join(la) or '无')}；乙方缺 {('、'.join(lb) or '无')}"
-    _fmt = lambda c: " ".join(f"{k}{v}" for k, v in c.items())
+    def _fmt(counts):
+        return " ".join(f"{key}{value}" for key, value in counts.items())
     res["五行个数"] = f"甲方 {_fmt(ca['wuxing_count'])}；乙方 {_fmt(cb['wuxing_count'])}"
     return res
 
@@ -590,7 +595,7 @@ def build_chart(args):
     local_solar = Solar.fromYmdHms(local_dt.year, local_dt.month, local_dt.day,
                                    local_dt.hour, local_dt.minute, 0)
     boundary_solar = Solar.fromYmdHms(boundary_dt.year, boundary_dt.month, boundary_dt.day,
-                                      boundary_dt.hour, boundary_dt.minute, 0)
+                                      boundary_dt.hour, boundary_dt.minute, boundary_dt.second)
     apparent_solar = Solar.fromYmdHms(apparent_dt.year, apparent_dt.month, apparent_dt.day,
                                       apparent_dt.hour, apparent_dt.minute, 0)
     boundary_lunar = boundary_solar.getLunar()
@@ -605,12 +610,12 @@ def build_chart(args):
     pillar_uncertainty = {}
     if not hour_known:
         endpoint_pillars = []
-        for endpoint in (datetime(y, mo, d, 0, 0), datetime(y, mo, d, 23, 59)):
+        for endpoint in (datetime(y, mo, d, 0, 0), datetime(y, mo, d, 23, 59, 59)):
             endpoint = endpoint + timedelta(hours=8.0 - args.tz)
             if not (YEAR_MIN <= endpoint.year <= YEAR_MAX):
                 raise ValueError(f"时辰未知日期的时区转换可能落在支持范围外：{endpoint.year}。")
             endpoint_ec = Solar.fromYmdHms(endpoint.year, endpoint.month, endpoint.day,
-                                           endpoint.hour, endpoint.minute, 0).getLunar().getEightChar()
+                                           endpoint.hour, endpoint.minute, endpoint.second).getLunar().getEightChar()
             endpoint_pillars.append({"年": endpoint_ec.getYear(), "月": endpoint_ec.getMonth()})
         for key in ("年", "月"):
             values = list(dict.fromkeys(item[key] for item in endpoint_pillars))
@@ -726,6 +731,7 @@ def build_chart(args):
         "version": __version__,
         "disclaimer": "本排盘与推演仅供传统文化研究与自我认知参考，不构成对命运、健康、婚姻、财富的预言或保证。",
         "input": {
+            "calendar": "农历" if args.lunar else "公历",
             "solar": input_solar_str,
             "true_solar": true_solar_str,
             "lunar": lunar.toString(), "shengxiao": SHENGXIAO[pillars[0][1]],
@@ -734,7 +740,8 @@ def build_chart(args):
             "china_dst": china_dst,
             "hour_known": hour_known, "zi_sect": effective_zi_sect,
             "lng": args.lng, "tz": args.tz,
-            "solar_term_time": boundary_dt.strftime("%Y-%m-%d %H:%M") + " UTC+8",
+            "solar_term_time": boundary_dt.strftime(
+                "%Y-%m-%d %H:%M:%S" if boundary_dt.second else "%Y-%m-%d %H:%M") + " UTC+8",
             "pillar_time_basis": None if hour_known else "当日正午参考值",
             "pillar_uncertainty": pillar_uncertainty,
             "limitations": limitations,
@@ -758,12 +765,15 @@ def build_chart(args):
 # ============================================================
 # 文本渲染
 # ============================================================
-def render_text(c):
+def render_text(c, *, include_partner=True):
     out = []
     def P(s=""): out.append(s)
     inp = c["input"]
     cols = list(c["pillars"])
     hour_known = c["input"].get("hour_known", "时" in cols)
+    partner_chart = c.get("partner_chart") if include_partner else None
+    if partner_chart:
+        P("【甲方命盘】")
     P("════════════════════ 八字命盘 ════════════════════")
     P(f"公历：{inp['solar']}　性别：{inp['gender']}　生肖：{inp['shengxiao']}　星座：{inp['xingzuo']}")
     if inp.get("true_solar"):
@@ -846,13 +856,22 @@ def render_text(c):
         P(f"  流日旬空：{td['liuri_xunkong']}")
         if td.get("边界提示"):
             P(f"  ※ {td['边界提示']}")
-    if c.get("compatibility"):
+    if partner_chart:
+        P("")
+        P("【乙方命盘】")
+        # 只渲染乙方本盘，忽略其潜在的合婚字段，避免嵌套或循环展示。
+        P(render_text(partner_chart, include_partner=False))
+    if include_partner and c.get("compatibility"):
         P("")
         P("【合婚双盘对照】（关系事实，不打分、不下合不合判词，判断见 references/17）")
         if c.get("partner_pillars"):
             pp = c["partner_pillars"]
-            cal = f"（{c['partner_calendar']}输入，未做真太阳时校正）" if c.get("partner_calendar") else ""
-            P("  乙方四柱：" + "  ".join(pp[k] for k in ["年", "月", "日", "时"]) + cal)
+            partner_input = c.get("partner_input", {})
+            basis = "已做真太阳时校正" if partner_input.get("true_solar") else "未做真太阳时校正"
+            cal = f"（{c['partner_calendar']}输入，{basis}）" if c.get("partner_calendar") else ""
+            P(f"  乙方{'四' if len(pp) == 4 else '三'}柱：" + "  ".join(pp.values()) + cal)
+            if partner_input.get("limitations"):
+                P(f"  乙方局限：{partner_input['limitations']}")
         if c.get("partner_yun"):
             P(f"  乙方大运：{c['partner_yun']}")
         if c.get("partner_dst_note"):
@@ -873,7 +892,9 @@ def _span_int(s):
 
 def validate_args(args):
     """输入校验：年份范围、经度范围、流年区间、公历/农历日期合法性（含闰月与小月）。"""
-    if not (YEAR_MIN <= args.year <= YEAR_MAX):
+    # 前一农历年腊月可能落在公历下界内；最终支持范围在转换后核验。
+    input_year_min = YEAR_MIN - 1 if getattr(args, "lunar", False) else YEAR_MIN
+    if not (input_year_min <= args.year <= YEAR_MAX):
         raise ValueError(f"年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年，收到 {args.year}。")
     if getattr(args, "gender", None) not in ("male", "female"):
         raise ValueError("gender 须为 male 或 female。")
@@ -916,16 +937,21 @@ def validate_args(args):
     partner_lunar = getattr(args, "partner_lunar", False)
     partner_gender = getattr(args, "partner_gender", None)
     partner_china_dst = getattr(args, "partner_china_dst", False)
-    if partner is None and (partner_lunar or partner_gender is not None or partner_china_dst):
-        raise ValueError("--partner-lunar、--partner-gender 与 --partner-china-dst 须与 --partner 一起使用。")
+    partner_lng = getattr(args, "partner_lng", None)
+    partner_tz = getattr(args, "partner_tz", None)
+    if partner is None and (partner_lunar or partner_gender is not None or partner_china_dst
+                            or partner_lng is not None or partner_tz is not None):
+        raise ValueError("乙方选项须与 --partner 一起使用。")
     if partner is not None:
-        if not (4 <= len(partner) <= 5):
-            raise ValueError("--partner 需 年 月 日 时 [分]，如 --partner 1992 8 15 10 0")
-        pv = list(partner) + [0] * (5 - len(partner))
-        py_, pm_, pd_, ph_, pmi_ = pv
-        if not (YEAR_MIN <= py_ <= YEAR_MAX):
+        if not (3 <= len(partner) <= 5):
+            raise ValueError("--partner 需 年 月 日 [时] [分]，如 --partner 1992 8 15 10 0")
+        py_, pm_, pd_ = partner[:3]
+        ph_ = partner[3] if len(partner) >= 4 else None
+        pmi_ = partner[4] if len(partner) == 5 else 0
+        partner_year_min = YEAR_MIN - 1 if partner_lunar else YEAR_MIN
+        if not (partner_year_min <= py_ <= YEAR_MAX):
             raise ValueError(f"合婚第二人年份超出支持范围：本引擎支持公历 {YEAR_MIN}-{YEAR_MAX} 年。")
-        if not (0 <= ph_ <= 23 and 0 <= pmi_ <= 59):
+        if ph_ is not None and not (0 <= ph_ <= 23 and 0 <= pmi_ <= 59):
             raise ValueError("合婚第二人时间有误：时0-23、分0-59。")
         if partner_lunar:
             if not (1 <= pm_ <= 12 or -12 <= pm_ <= -1):
@@ -944,7 +970,7 @@ def validate_args(args):
                 raise ValueError(f"合婚第二人：农历 {py_} 年{pmdesc}是小月，只有 {plm.getDayCount()} 天，没有 {pd_} 日。")
         else:
             try:
-                datetime(py_, pm_, pd_, ph_, pmi_)
+                datetime(py_, pm_, pd_, ph_ if ph_ is not None else 12, pmi_)
             except ValueError as e:
                 raise ValueError(f"合婚第二人日期非法：{e}") from e
     if getattr(args, "target_date", None) is not None:
@@ -1003,14 +1029,18 @@ def main():
                     help="流年起始年与年数(均须≥1)，如 --years 2024 12")
     ap.add_argument("--target-date", type=int, nargs=3, metavar=("Y", "M", "D"),
                     help="指定公历日，输出其流年/流月/流日干支与对原局的引动（断语止于月）")
-    ap.add_argument("--partner", type=int, nargs="+", metavar="Y M D H [Mi]",
-                    help="合婚第二人生辰(年 月 日 时 [分])，默认公历，与主盘做双盘对照（不打分）")
+    ap.add_argument("--partner", type=int, nargs="+", metavar="Y M D [H] [Mi]",
+                    help="合婚第二人生辰(年 月 日 [时] [分])，三值表示时辰未知；默认公历")
     ap.add_argument("--partner-lunar", action="store_true",
                     help="合婚第二人生辰按农历输入（独立于主盘 --lunar，闰月用负数月）")
     ap.add_argument("--partner-gender", choices=["male", "female"], default=None,
                     help="合婚第二人性别，用于乙方盘大运顺逆（不传则同主盘）")
     ap.add_argument("--partner-china-dst", action="store_true",
                     help="明确按中国 1986-1991 夏令时规则提示核对乙方时间")
+    ap.add_argument("--partner-lng", type=float, default=None,
+                    help="合婚第二人出生地经度，用于乙方真太阳时校正")
+    ap.add_argument("--partner-tz", type=float, default=None,
+                    help="合婚第二人时区偏移（默认 +8）")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"bazi paipan v{__version__}")
     args = ap.parse_args()
@@ -1018,18 +1048,27 @@ def main():
     try:
         chart = build_chart(args)
         if args.partner:
-            pv = list(args.partner) + [0] * (5 - len(args.partner))
-            pargs = argparse.Namespace(year=pv[0], month=pv[1], day=pv[2], hour=pv[3], minute=pv[4],
+            partner_hour = args.partner[3] if len(args.partner) >= 4 else None
+            partner_minute = args.partner[4] if len(args.partner) == 5 else 0
+            pargs = argparse.Namespace(year=args.partner[0], month=args.partner[1], day=args.partner[2],
+                                       hour=partner_hour, minute=partner_minute,
                                        gender=args.partner_gender or args.gender,
                                        lunar=args.partner_lunar,
-                                       lng=None, tz=8.0, zi_sect=args.zi_sect, years=None, target_date=None,
+                                       lng=args.partner_lng,
+                                       tz=args.partner_tz if args.partner_tz is not None else 8.0,
+                                       zi_sect=args.zi_sect if partner_hour is not None else None,
+                                       years=None, target_date=None,
                                        china_dst=args.partner_china_dst)
             partner_chart = build_chart(pargs)
+            chart["partner_chart"] = partner_chart
             chart["compatibility"] = compatibility(chart, partner_chart)
             chart["partner_pillars"] = partner_chart["pillars"]
+            chart["partner_input"] = partner_chart["input"]
             chart["partner_calendar"] = "农历" if args.partner_lunar else "公历"
-            chart["partner_yun"] = (f"{partner_chart['yun_direction']}　"
-                                    f"{partner_chart['start_age']}岁起运（虚岁，按{'乙方' if args.partner_gender else '主盘'}性别定顺逆）")
+            chart["partner_yun"] = None
+            if partner_chart["input"]["hour_known"]:
+                chart["partner_yun"] = (f"{partner_chart['yun_direction']}　"
+                                        f"{partner_chart['start_age']}岁起运（虚岁，按{'乙方' if args.partner_gender else '主盘'}性别定顺逆）")
             chart["partner_dst_note"] = partner_chart["input"].get("dst_note")
     except (ValueError, RuntimeError) as e:
         ap.error(str(e))
