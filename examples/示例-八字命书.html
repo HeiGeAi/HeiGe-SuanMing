@@ -355,6 +355,22 @@ a:focus-visible{outline:2px solid var(--reader-paper);outline-offset:4px}
   .hero{break-after:page}
 }
 
+/* Report footer: static feature directory, scoped to avoid changing the reading. */
+#next-steps{color:var(--reader-paper);border-top:1px solid var(--reader-rule)}
+#next-steps .sec-title{font-size:clamp(24px,4vw,34px);line-height:1.4;letter-spacing:0}
+#next-steps .sec-title::after{content:'';display:block;width:48px;height:8px;background:var(--reader-accent);margin-top:20px}
+#next-steps p{font-size:16px;line-height:1.85;overflow-wrap:anywhere}
+.next-options{list-style-position:inside;margin:24px 0;padding:0}
+.next-options li{padding:24px 0;border-top:1px solid var(--reader-rule);break-inside:avoid}
+.next-options li::marker{font-family:var(--reader-num);font-size:24px;color:var(--reader-paper)}
+.next-options h3{display:inline;font-size:20px;font-weight:600;margin-left:8px}
+.next-options p{margin:8px 0 0}
+#next-steps .next-input{color:var(--reader-muted);font-size:14px}
+@media print{
+  #next-steps,#next-steps p,.next-options h3,.next-options li::marker{color:#111!important}
+  #next-steps,.next-options li{border-color:#777!important}
+}
+
 </style>
 </head>
 <body id="top">
@@ -742,6 +758,24 @@ a:focus-visible{outline:2px solid var(--reader-paper);outline-offset:4px}
     <div class="bigline" style="color:var(--fire)">走金水 · 向北西<br>凭才学 · 守住财<br>缓婚姻 · 降火气</div>
   </div>
   <div class="heige-read reveal"><span>黑哥解读</span><p>整张盘的核心没有变：你本身动力和能力都够，真正需要的是降速、守边界，并等金水阶段把事业与财富的条件补齐。命理给的是观察角度，现实选择仍以事实和专业意见为准。</p></div>
+</section>
+
+<!-- ============ 功能与使用提示 ============ -->
+<section id="next-steps" aria-labelledby="next-steps-title" tabindex="-1">
+  <div class="sec-head"><div><h2 class="sec-title" id="next-steps-title">这份报告之后<br>你还可以做什么</h2></div></div>
+  <p>HeiGe-SuanMing 还可以继续做下面这些分析。挑一项，把示例说法发回当前对话即可；已经提供过的资料会沿用，只补充新问题需要的信息。</p>
+  <ol class="next-options">
+    <li><h3>八字完整命书</h3><p>从性格、事业、财富、感情到人生阶段，做一次整体解读。</p><p>可以这样说：「按八字给我做一份完整命书。」</p><p class="next-input">需要提供：出生年月日、公历或农历、性别；已知时分、出生地和时区一并提供。</p></li>
+    <li><h3>单个主题深入看</h3><p>把事业、赚钱方式、感情或家庭单独展开。</p><p>可以这样说：「只看我的事业，把工作方式和合作问题讲具体。」</p><p class="next-input">需要提供：说清想深入的主题；已有出生资料可继续使用。</p></li>
+    <li><h3>指定年份与月份</h3><p>集中看某一年，或细看这一年各个月份的阶段变化。</p><p>可以这样说：「看看我2027年的事业，细到月份。」</p><p class="next-input">需要提供：指定年份和关注主题；已有出生资料可继续使用。</p></li>
+    <li><h3>两个人的关系</h3><p>比较双方的相处方式、容易合拍的地方与需要磨合的分歧。</p><p>可以这样说：「帮我分析和伴侣的相处方式。」</p><p class="next-input">需要提供：补充另一人的出生资料，不知道的时辰明确写未知。</p></li>
+    <li><h3>紫微斗数</h3><p>从事业、财富、伴侣、家庭等十二类生活领域看命盘，目前提供排盘和基础框架解读。</p><p>可以这样说：「用紫微给我排盘，看看各个生活领域。」</p><p class="next-input">需要提供：出生资料中需要有出生时辰；已有资料可继续使用。</p></li>
+    <li><h3>梅花易数</h3><p>用两个数字或指定时间，围绕一件事看当前状态与后续变化。</p><p>可以这样说：「用梅花看未来一个月的求职进展，数字34、43。」</p><p class="next-input">需要提供：具体问题、关注期限，以及两个正整数或起卦时间。</p></li>
+    <li><h3>六爻</h3><p>围绕一件事，分别看自己、对方、关键阻碍和变化条件。</p><p>可以这样说：「我想用六爻问这次合作，先告诉我怎么记录六次摇卦。」</p><p class="next-input">需要提供：具体问题、关注期限、起卦日期时间和六次摇卦结果。</p></li>
+    <li><h3>奇门遁甲</h3><p>针对某个时刻，观察一件事的整体局面、机会和阻力。</p><p>可以这样说：「用奇门看这次合作洽谈的局面。」</p><p class="next-input">需要提供：具体问题、关注期限和起局年月日时分，注明时间口径。</p></li>
+    <li><h3>日常配色与生活建议</h3><p>把报告里的建议展开成衣着、配饰、环境配色和日常作息清单。</p><p>可以这样说：「把我的穿衣配色和日常作息建议单独列出来。」</p><p class="next-input">需要提供：说清想要穿搭、环境还是作息建议，也可补充现有习惯。</p></li>
+  </ol>
+  <p>报告也可以只要文字版；HTML 命书可通过浏览器打印保存为 PDF。选好后，把对应说法发回对话即可。</p>
 </section>
 
 </div>

@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.16.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.17.0-7c3aed.svg)
 ![Engine](https://img.shields.io/badge/engine-1.5.0-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
@@ -19,6 +19,14 @@
 [先选需求](#先选需求) • [快速开始](#快速开始-quick-start) • [这是什么](#这是什么-what-is-this) • [为什么不一样](#为什么不一样-why-its-different) • [核心方法论](#核心方法论-methodology) • [知识底座](#知识底座-knowledge-base) • [命盘样例](#命盘样例-sample) • [可视化命书](#可视化命书-visual-report) • [多 Agent 支持](#多-agent-支持-works-with-any-agent) • [免责声明](#免责声明-disclaimer)
 
 </div>
+
+## v1.17.0 更新：读完报告，知道下一步还能做什么
+
+每份标准报告末尾新增「这份报告之后，你还可以做什么」，列出完整命书、单主题深入、指定年份与月份、双人关系、紫微、梅花、六爻、奇门及日常配色与生活建议。每项都有用途、可直接发给 Agent 的示例说法和所需信息，已有资料会沿用。
+
+HTML 与纯文字解读均包含提示，打印时也保留；用户选择后才执行。仅原始排盘、JSON、数据核对或明确不要提示的任务省略。本次仅增加末尾功能提示，现有正文解读格式、黑哥解读规则和五个计算引擎保持不变。
+
+正式版本：[v1.17.0](https://github.com/HeiGeAi/HeiGe-SuanMing/releases/tag/v1.17.0)。标准提示见 [`references/23_report_next_steps.md`](references/23_report_next_steps.md)。
 
 ## 先选需求
 
@@ -123,7 +131,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 第 9 步  趋避与调养：用神落到方位、行业，再给色彩服饰（穿戴随身环境）与作息饮食情志的个性化建议
 第 10 步 总评：3-5 句收束命局核心结构与一生大势
 第 11 步 可视化：（默认交付）把整份命书自动做成一页 HTML 报告，给出路径并直接打开
-第 12 步 相关后续：有需要时列 2 至 3 个相关选项，用户选择后再展开
+第 12 步 功能提示：报告末尾固定列出其他功能、用途、示例说法和所需信息，用户选择后再展开
 ```
 
 > **交互范式：先选目标、一次补齐必要信息，核心自动完成。** 输入足够后，排盘、与问题相关的推演、HTML 命书连续交付。先看短结论，再看依据和完整报告；只问事业就聚焦事业，额外合婚、养生详单或其他引擎不会自动全部展开。
@@ -318,7 +326,7 @@ Windows 将上述 `./.venv/bin/python` 换成 `.\.venv\Scripts\python.exe`，其
 
 ### v1.16.0 口径与输入契约说明
 
-正式版本：[v1.16.0](https://github.com/HeiGeAi/HeiGe-SuanMing/releases/tag/v1.16.0)（2026-09-06）。奇门引擎同步更新为 `v1.2.1`。
+历史版本：[v1.16.0](https://github.com/HeiGeAi/HeiGe-SuanMing/releases/tag/v1.16.0)（2026-09-06）。奇门引擎同步更新为 `v1.2.1`。
 
 - 八字 `v1.5.0`：跨国际日期变更线的等价经度不再产生虚假整日真太阳时偏移；合婚乙方可独立声明经度、时区并省略未知时辰。JSON 的 `partner_chart` 保存乙方完整排盘，`partner_input` 保存输入口径；原有 `partner_pillars`、`partner_calendar` 等摘要字段继续保留，读取完整双盘时不必另算乙方。
 - 梅花 `v1.2.0`：农历小月、不存在的闰月及换算后年份越界会返回明确中文错误；`--lunar` 与 `--zi-sect` 只允许和 `--time` 同用。

@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-class TestReleaseContractV1160(unittest.TestCase):
+class TestReleaseContractV1170(unittest.TestCase):
     def test_declared_minimum_dependency_matches_supported_runtime(self):
         requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
         self.assertRegex(requirements, r"(?m)^lunar_python==1\.4\.8$")
@@ -28,7 +28,7 @@ class TestReleaseContractV1160(unittest.TestCase):
     def test_version_metadata_matches_engines(self):
         skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         expected = {
-            "version": "1.16.0",
+            "version": "1.17.0",
             "engine-version": "1.5.0",
             "meihua-version": "1.2.0",
             "liuyao-version": "1.2.0",
@@ -40,9 +40,9 @@ class TestReleaseContractV1160(unittest.TestCase):
 
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-        self.assertIn("skill-1.16.0", readme)
+        self.assertIn("skill-1.17.0", readme)
         self.assertIn("engine-1.5.0", readme)
-        self.assertRegex(changelog, r"(?m)^## \[1\.16\.0\] - 2026-09-06$")
+        self.assertRegex(changelog, r"(?m)^## \[1\.17\.0\] - 2026-09-06$")
 
         scripts = {
             "paipan.py": "1.5.0",
