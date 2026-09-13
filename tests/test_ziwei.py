@@ -433,6 +433,46 @@ class TestLeapMonth(unittest.TestCase):
         self.assertEqual(unfixed["calculation"]["effective_month"], 2)
 
 
+class TestZiSect(unittest.TestCase):
+    """晚子时（23 点后）取日口径：1=归次日、2=不换日（默认），与八字/梅花/六爻的口径开关一致。"""
+
+    def test_default_keeps_day_and_records_sect(self):
+        chart = ziwei.build_chart(2023, 4, 6, 23, 30, "male")
+        self.assertEqual(chart["lunar"]["日"], 16)
+        self.assertEqual(chart["input"]["zi_sect"], 2)
+
+    def test_sect1_advances_to_next_day_for_solar_and_lunar(self):
+        solar = ziwei.build_chart(2023, 4, 6, 23, 30, "male", zi_sect=1)
+        lunar = ziwei.build_chart(2023, -2, 16, 23, 30, "male", lunar=True, zi_sect=1)
+        for chart in (solar, lunar):
+            self.assertEqual(chart["lunar"]["日"], 17)
+            self.assertEqual(chart["lunar"]["时支"], "子")
+            self.assertEqual(chart["input"]["zi_sect"], 1)
+
+    def test_sect1_matches_next_day_midnight_chart(self):
+        advanced = ziwei.build_chart(2023, 4, 6, 23, 30, "male", zi_sect=1)
+        next_day = ziwei.build_chart(2023, 4, 7, 0, 30, "male")
+        self.assertEqual(advanced["lunar"], next_day["lunar"])
+        self.assertEqual(advanced["命宫"], next_day["命宫"])
+        self.assertEqual(advanced["五行局"], next_day["五行局"])
+        self.assertEqual(advanced["紫微"], next_day["紫微"])
+
+    def test_invalid_zi_sect_rejected(self):
+        for bad in (0, 3, "1"):
+            with self.subTest(bad=bad):
+                with self.assertRaisesRegex(ValueError, "zi_sect"):
+                    ziwei.build_chart(2023, 4, 6, 23, 30, "male", zi_sect=bad)
+
+    def test_render_text_shows_sect_and_late_zi_hint(self):
+        chart = ziwei.build_chart(2023, 4, 6, 23, 30, "male")
+        text = ziwei.render_text(chart)
+        self.assertIn("zi_sect=2", text)
+        self.assertIn("晚子时", text)
+        self.assertIn("--zi-sect 1", text)
+        noon = ziwei.render_text(ziwei.build_chart(2023, 4, 6, 12, 0, "male"))
+        self.assertNotIn("晚子时", noon)
+
+
 class TestYearDivide(unittest.TestCase):
     def test_normal_uses_lunar_new_year_and_exact_uses_lichun(self):
         normal = ziwei.build_chart(
@@ -498,6 +538,15 @@ class TestCli(unittest.TestCase):
         )
         self.assertEqual(chart["calculation"]["effective_month"], 2)
         self.assertEqual(chart["calculation"]["effective_year_ganzhi"], "癸卯")
+
+    def test_zi_sect_cli_applied_and_recorded(self):
+        import json
+        r = self._run("2023", "4", "6", "23", "30", "--gender", "male",
+                      "--zi-sect", "1", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        chart = json.loads(r.stdout)
+        self.assertEqual(chart["input"]["zi_sect"], 1)
+        self.assertEqual(chart["lunar"]["日"], 17)
 
     def test_version(self):
         r = self._run("--version")

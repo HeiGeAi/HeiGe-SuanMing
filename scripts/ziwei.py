@@ -20,6 +20,7 @@ License: PolyForm Noncommercial 1.0.0（完整条款见仓库根 LICENSE）
   python3 ziwei.py 2000 8 16 3 30 --gender female            # 公历生辰起盘
   python3 ziwei.py 2000 7 17 3 30 --gender female --lunar    # 农历生辰起盘（闰月用负数月）
   python3 ziwei.py 2000 8 16 3 30 --gender female --json     # JSON 输出
+  python3 ziwei.py 2000 8 16 23 30 --gender female --zi-sect 1  # 晚子时归次日口径（默认 2=不换日）
 """
 
 import argparse
@@ -267,13 +268,15 @@ def xiaoxian_gong(year_zhi_idx, gender, age):
 # 主排盘
 # ============================================================
 def build_chart(y, mo, d, h, mi, gender, lunar=False, fix_leap=True,
-                year_divide="normal"):
+                year_divide="normal", zi_sect=2):
     if gender not in {"male", "female"}:
         raise ValueError("性别须为 male 或 female。")
     if not isinstance(fix_leap, bool):
         raise ValueError("fix_leap 须为布尔值。")
     if year_divide not in ("normal", "exact"):
         raise ValueError("year_divide 须为 normal 或 exact。")
+    if zi_sect not in (1, 2):
+        raise ValueError("zi_sect 只能为 1（晚子归次日）或 2（不换日）。")
     # 公历年初可能仍属于上一农历年；准入后按转换后的公历日期复核。
     input_year_min = YEAR_MIN - 1 if lunar else YEAR_MIN
     if not (input_year_min <= y <= YEAR_MAX):
@@ -289,12 +292,23 @@ def build_chart(y, mo, d, h, mi, gender, lunar=False, fix_leap=True,
         raise RuntimeError("缺少依赖 lunar_python，请先运行：pip3 install lunar_python") from None
 
     try:
+        # 晚子时口径：zi_sect=1 时 23 点取次日农历日安星（时支仍为子）；2=不换日（默认）
+        advanced = zi_sect == 1 and h == 23
         if lunar:
             lun = Lunar.fromYmdHms(y, mo, d, h, mi, 0)
+            if advanced:
+                from datetime import datetime, timedelta
+                s = lun.getSolar()
+                nd = datetime(s.getYear(), s.getMonth(), s.getDay()) + timedelta(days=1)
+                lun = Solar.fromYmdHms(nd.year, nd.month, nd.day, 23, mi, 0).getLunar()
         else:
-            from datetime import datetime
+            from datetime import datetime, timedelta
             datetime(y, mo, d, h, mi)
-            lun = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar()
+            if advanced:
+                nd = datetime(y, mo, d, h, mi) + timedelta(hours=1)
+                lun = Solar.fromYmdHms(nd.year, nd.month, nd.day, 23, mi, 0).getLunar()
+            else:
+                lun = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar()
     except ValueError as e:
         raise ValueError(f"日期非法：{e}") from None
     except Exception as e:
@@ -386,7 +400,8 @@ def build_chart(y, mo, d, h, mi, gender, lunar=False, fix_leap=True,
         "input": {"solar_or_lunar_input": "农历" if lunar else "公历",
                   "gender": "男" if gender == "male" else "女",
                   "year": y, "month": mo, "day": d, "hour": h, "minute": mi,
-                  "fix_leap": fix_leap, "year_divide": year_divide},
+                  "fix_leap": fix_leap, "year_divide": year_divide,
+                  "zi_sect": zi_sect},
         "calculation": {"effective_year_ganzhi": effective_year_ganzhi,
                         "effective_month": chart_month},
         "lunar": {"年干支": actual_lunar_year_ganzhi, "月": month, "闰月": leap_month,
@@ -419,7 +434,14 @@ def render_text(c):
     P(f"农历：{lu['年干支']}年 {month_text}月 {lu['日']}日 {lu['时支']}时")
     calc = c["calculation"]
     P(f"排盘口径：fix_leap={str(inp['fix_leap']).lower()}　year_divide={inp['year_divide']}　"
+      f"zi_sect={inp['zi_sect']}　"
       f"排盘采用年：{calc['effective_year_ganzhi']}　安宫月：{calc['effective_month']}")
+    if inp["hour"] == 23:
+        sect_text = "归次日" if inp["zi_sect"] == 1 else "不换日（本引擎默认）"
+        alt = "不换日" if inp["zi_sect"] == 1 else "归次日"
+        P(f"提示：晚子时（23:00-23:59）出生，当前取日口径 zi_sect={inp['zi_sect']}（{sect_text}）；"
+          f"紫微另一主流口径为{alt}，可用 --zi-sect {3 - inp['zi_sect']} 重排对照，"
+          f"两口径农历日差一天，紫微定位、五行局与命宫随之不同。")
     P(f"命宫：{c['命宫']['干支']}　身宫：{c['身宫']['地支']}（在{c['身宫']['所在宫']}）　五行局：{c['五行局']}")
     P(f"紫微：{c['紫微']}　天府：{c['天府']}　命主：{c['命主']}　身主：{c['身主']}")
     P("")
@@ -484,6 +506,8 @@ def main():
                     help="闰月不分上下半月，整月均按本月安宫")
     ap.add_argument("--year-divide", choices=["normal", "exact"], default="normal",
                     help="排盘年界：normal=春节，exact=立春")
+    ap.add_argument("--zi-sect", type=int, choices=[1, 2], default=None,
+                    help="晚子时(23点后)取日口径：1=归次日、2=不换日(默认)；23点起盘时声明所用口径")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--version", action="version", version=f"ziwei v{__version__}")
     args = ap.parse_args()
@@ -491,7 +515,8 @@ def main():
     try:
         chart = build_chart(args.year, args.month, args.day, args.hour, args.minute,
                             args.gender, lunar=args.lunar, fix_leap=args.fix_leap,
-                            year_divide=args.year_divide)
+                            year_divide=args.year_divide,
+                            zi_sect=args.zi_sect if args.zi_sect is not None else 2)
     except (ValueError, RuntimeError) as e:
         ap.error(str(e))
     if args.json:

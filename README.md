@@ -178,7 +178,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 
 **三、多用神冲突有决策树仲裁。** 调候、扶抑、格局、病药各执一词时该听谁的？`references/02` 给了一条五级优先级阶梯（先验从格 → 再急调候 → 扶抑定向 → 格局定点 → 病药校验），把流派之争收敛成一套可执行的取舍顺序。
 
-**四、排盘边界有回归测试兜底。** `tests/` 共 405 个测试（八字 158 + 梅花 49 + 六爻 43 + 紫微 66 + 奇门 75 + 命例复现 8 + 发布契约 6）。八字覆盖日期变更线、合婚乙方独立时区与完整双盘、节气秒级边界；梅花锁定农历小月、闰月与换算后年份；六爻锁定两种子时换日口径与默认值兼容；紫微锁定闰月十五、十六分界、晚子时及立春交接时刻；奇门直接断言跨年符头完整六元组、非法干支有界失败，以及置闰阈值保存与输出重放。四个命例的输出与文档中的命令逐字比对，正文的十神、藏干、起运、大运与流年事实也与引擎对照，专旺候选须披露缺少的组合条件；HTML 示例盘面及大运星运与引擎对照；既有古法定式、节气、未知时辰、大运、飞化、固定盘等回归继续保留。测试证明固定输入符合仓库中的预期，不等于覆盖所有年份、所有流派或独立证明外部 oracle；改动脚本后仍须运行 `python3 -m unittest discover -s tests`。
+**四、排盘边界有回归测试兜底。** `tests/` 共 411 个测试（八字 158 + 梅花 49 + 六爻 43 + 紫微 72 + 奇门 75 + 命例复现 8 + 发布契约 6）。八字覆盖日期变更线、合婚乙方独立时区与完整双盘、节气秒级边界；梅花锁定农历小月、闰月与换算后年份；六爻锁定两种子时换日口径与默认值兼容；紫微锁定闰月十五、十六分界、晚子时及立春交接时刻；奇门直接断言跨年符头完整六元组、非法干支有界失败，以及置闰阈值保存与输出重放。四个命例的输出与文档中的命令逐字比对，正文的十神、藏干、起运、大运与流年事实也与引擎对照，专旺候选须披露缺少的组合条件；HTML 示例盘面及大运星运与引擎对照；既有古法定式、节气、未知时辰、大运、飞化、固定盘等回归继续保留。测试证明固定输入符合仓库中的预期，不等于覆盖所有年份、所有流派或独立证明外部 oracle；改动脚本后仍须运行 `python3 -m unittest discover -s tests`。
 
 ---
 
@@ -314,7 +314,7 @@ Windows 如果未安装 `py` 启动器，用已安装的 Python 3 命令替换 `
 ./.venv/bin/python scripts/meihua.py --numbers 34 43 --query "问未来一个月求职进展"
 # 六爻装卦（23 点附近用 --zi-sect 明确换日口径，默认 2=午夜换日）
 ./.venv/bin/python scripts/liuyao.py --yao 787888 --date 2026 6 5 23 50 --zi-sect 2
-# 紫微斗数安星（默认闰月十六日起按下一月安宫，生年干支按春节分界）
+# 紫微斗数安星（默认闰月十六日起按下一月安宫，生年干支按春节分界；23 点附近用 --zi-sect 明确晚子时取日口径，默认 2=不换日）
 ./.venv/bin/python scripts/ziwei.py 2000 8 16 3 30 --gender female --year-divide normal
 # 奇门遁甲排局（时家转盘·拆补法）
 ./.venv/bin/python scripts/qimen.py 2026 7 9 10 30
@@ -481,7 +481,7 @@ HeiGe-SuanMing/
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings → guidance plus personalized health-cultivation and color/attire advice (lifestyle, diet, rest, and what to wear, tuned to the useful god, not folk "supplement what's missing"). Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors methods back to canonical texts, including Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, and Sanming Tonghui. `cases/` ships four fully worked, desensitized readings. The suite contains 405 checks: Bazi 158, Meihua 49, Liu Yao 43, Zi Wei Dou Shu 66, Qi Men Dun Jia 75, documented examples 8, and release contracts 6. They cover calendar and solar-term boundaries, unknown-hour output, leap months, midnight conventions, the international date line, partner time zones, fixed iztro anchors, two palace-by-palace Qi Men charts, and a 35-case leap-adjustment battery. These tests establish repository behavior for fixed cases; they do not prove every year, school, or external oracle.
+**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors methods back to canonical texts, including Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, and Sanming Tonghui. `cases/` ships four fully worked, desensitized readings. The suite contains 411 checks: Bazi 158, Meihua 49, Liu Yao 43, Zi Wei Dou Shu 72, Qi Men Dun Jia 75, documented examples 8, and release contracts 6. They cover calendar and solar-term boundaries, unknown-hour output, leap months, midnight conventions, the international date line, partner time zones, fixed iztro anchors, two palace-by-palace Qi Men charts, and a 35-case leap-adjustment battery. These tests establish repository behavior for fixed cases; they do not prove every year, school, or external oracle.
 
 **A one-page visual report, delivered by default.** Once the requested reading is done, the agent renders it into a single elegant HTML scroll and opens it for you (just say so if you only want the text version): chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 
