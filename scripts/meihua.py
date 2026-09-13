@@ -327,7 +327,7 @@ def main():
             raise ValueError("--lunar 与 --zi-sect 仅能与 --time 同用。")
         if args.time:
             if not (4 <= len(args.time) <= 5):
-                sys.exit("--time 需 年 月 日 时 [分]")
+                ap.error("--time 需 年 月 日 时 [分]")
             t = list(args.time) + [0] * (5 - len(args.time))
             zi_sect = args.zi_sect if args.zi_sect is not None else 2
             chart = qigua_by_time(t[0], t[1], t[2], t[3], t[4], lunar=args.lunar, zi_sect=zi_sect)
