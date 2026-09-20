@@ -6,13 +6,13 @@
 
 <div align="center">
 
-![Skill](https://img.shields.io/badge/skill-1.17.0-7c3aed.svg)
+![Skill](https://img.shields.io/badge/skill-1.18.0-7c3aed.svg)
 ![Engine](https://img.shields.io/badge/engine-1.5.0-0e7490.svg)
 ![Agents](https://img.shields.io/badge/agents-universal-orange.svg)
 ![Recommended](https://img.shields.io/badge/recommended-Claude%20Opus%204.8-d97706.svg)
 ![License](https://img.shields.io/badge/license-PolyForm%20NC-64748b.svg)
 
-**黑哥算命 · 八字/紫微命理排盘推演 + 占测引擎（梅花 · 六爻 · 奇门遁甲）| Bazi & Zi Wei Dou Shu destiny engines, plus Meihua, Liu Yao & Qi Men Dun Jia divination engines, that compute first, then reason**
+**黑哥算命 · 八字/紫微命理排盘推演 + 占测引擎（梅花 · 六爻 · 奇门遁甲）+ 手机号八星结构分析 | Bazi & Zi Wei Dou Shu destiny engines, Meihua, Liu Yao & Qi Men Dun Jia divination engines, plus an independent phone-energy analyzer, that compute first, then reason**
 
 像做技术分析一样算命：排盘、起卦、装卦交给脚本算准，推演按固定方法论逐层展开，每个结论都标注依据。
 
@@ -20,13 +20,13 @@
 
 </div>
 
-## v1.17.0 更新：读完报告，知道下一步还能做什么
+## v1.18.0 更新：手机号八星报告先看结果，再看解读
 
-每份标准报告末尾新增「这份报告之后，你还可以做什么」，列出完整命书、单主题深入、指定年份与月份、双人关系、紫微、梅花、六爻、奇门及日常配色与生活建议。每项都有用途、可直接发给 Agent 的示例说法和所需信息，已有资料会沿用。
+新增并完善独立的手机号八星结构分析引擎 `scripts/phone_energy.py`，当前引擎版本为 `0.2.0`。输入手机号、车牌、门牌或其他数字串后，报告会先展示脱敏号码、相邻数字拆分、八星分布、主导主题和尾部组合，再用白话解释这些标签可能对应的日常场景，并给出可以试做七天的小行动。
 
-HTML 与纯文字解读均包含提示，打印时也保留；用户选择后才执行。仅原始排盘、JSON、数据核对或明确不要提示的任务省略。本次仅增加末尾功能提示，现有正文解读格式、黑哥解读规则和五个计算引擎保持不变。
+报告默认不写入完整手机号，数字对、规则 profile、解读文案和行动建议分别保留，方便复核计算依据。手机号八星与八字、紫微、梅花、六爻、奇门保持独立，不会自动合并成一个命运分。原有标准报告末尾的功能提示继续保留，用户选择后才执行。
 
-正式版本：[v1.17.0](https://github.com/HeiGeAi/HeiGe-SuanMing/releases/tag/v1.17.0)。标准提示见 [`references/23_report_next_steps.md`](references/23_report_next_steps.md)。
+正式版本：[v1.18.0](https://github.com/HeiGeAi/HeiGe-SuanMing/releases/tag/v1.18.0)。手机号八星输入契约与规则边界见 [`references/24_phone_energy.md`](references/24_phone_energy.md)，标准报告提示见 [`references/23_report_next_steps.md`](references/23_report_next_steps.md)。
 
 ## 先选需求
 
@@ -40,6 +40,7 @@ HTML 与纯文字解读均包含提示，打印时也保留；用户选择后才
 | 问一件事，已有数字或指定起卦时间 | 梅花 `scripts/meihua.py` | 具体问题、关注期限，以及两个正整数或起卦年月日时 |
 | 已摇好六次卦，想装卦解读 | 六爻 `scripts/liuyao.py` | 具体问题、起卦日期时间，六次结果按初爻到上爻填写（6、7、8、9） |
 | 用奇门看某个时刻的一件事 | 奇门 `scripts/qimen.py` | 具体问题、起局年月日时分；明确时间口径，已指定排局法时一并说明 |
+| 分析手机号、车牌或其他数字串的八星结构 | 手机号八星 `scripts/phone_energy.py` | 数字串和类型（手机号、车牌、门牌或通用数字）；不需要出生日期 |
 
 给 Agent 的可复制示例（以下均为演示输入）：
 
@@ -61,7 +62,7 @@ HTML 与纯文字解读均包含提示，打印时也保留；用户选择后才
 
 ## 这是什么 What is this
 
-HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**第二命理引擎（批一生）与**梅花易数**、**六爻纳甲**、**奇门遁甲**三个占测引擎（占一时一事），能跑在任何"会读文件 + 能调 Python"的 AI Agent 里（推荐 Claude Code + Claude Opus 4.8）。八字部分把算命拆成两层：
+HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**第二命理引擎（批一生）、**梅花易数**、**六爻纳甲**、**奇门遁甲**三个占测引擎（占一时一事），以及一个独立的**手机号八星数字结构引擎**，能跑在任何"会读文件 + 能调 Python"的 AI Agent 里（推荐 Claude Code + Claude Opus 4.8）。八字部分把算命拆成两层：
 
 **第一层：排盘用脚本算，绝不靠模型手推。**
 `scripts/paipan.py` 基于 `lunar_python` 做精确干支推算，自动处理三件最容易错的事：以**立春**定年柱（不是正月初一）、以**节气**定月柱（不是农历月）、在明确经度与时区后按**真太阳时**校正时柱。再往上算齐藏干、十神、纳音、长生十二宫、旬空、胎元命宫身宫、地支刑冲合会、五行力量加权、神煞、大运流年。
@@ -88,6 +89,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 - ✅ **六爻纳甲占卜（第三引擎）**：摇卦装卦全交脚本（纳甲干支、八宫世应、六亲、六神、动变卦、月建日辰旬空），按用神旺衰与动静生克细断一事，装卦定式以京房体系回归测试钉死
 - ✅ **紫微斗数安星（第四引擎）**：十二宫定位、五行局、紫微天府双星系、四化、六吉、禄存、六煞、大限小限、**命主身主、宫干飞化与离心向心自化、大限四化**交脚本按已测试口径计算；选定固定锚点曾与 iztro 2.5.8 显式配置比对，边界差异已记录
 - ✅ **奇门遁甲排局（第五引擎）**：时家转盘排局交脚本按已测试口径计算（**拆补与置闰双排局法**、地盘三奇六仪、旬首值符值使、天盘九星、八门飞宫、八神、旬空驿马、星门伏吟反吟），并输出**断局标注层**（逐宫十干克应、九星旺衰、击刑入墓门迫、格局清单、五不遇时）；置闰法有 35 项固定期望电池，但外部 oracle 的原始快照与版本仍需后续补档
+- ✅ **手机号八星结构分析（独立引擎 v0.2.0）**：按相邻数字对识别八星（天医、生气、延年、伏位、绝命、祸害、五鬼、六煞），输出主导星、吉凶结构、尾部组合、0/5 修饰、未识别数字对和规则依据；默认脱敏，不保存完整手机号，不混入出生日期命理
 
 ### 适合谁
 
@@ -178,7 +180,7 @@ HeiGe-SuanMing 是一个**四柱八字命理引擎**，并内置**紫微斗数**
 
 **三、多用神冲突有决策树仲裁。** 调候、扶抑、格局、病药各执一词时该听谁的？`references/02` 给了一条五级优先级阶梯（先验从格 → 再急调候 → 扶抑定向 → 格局定点 → 病药校验），把流派之争收敛成一套可执行的取舍顺序。
 
-**四、排盘边界有回归测试兜底。** `tests/` 共 411 个测试（八字 158 + 梅花 49 + 六爻 43 + 紫微 72 + 奇门 75 + 命例复现 8 + 发布契约 6）。八字覆盖日期变更线、合婚乙方独立时区与完整双盘、节气秒级边界；梅花锁定农历小月、闰月与换算后年份；六爻锁定两种子时换日口径与默认值兼容；紫微锁定闰月十五、十六分界、晚子时及立春交接时刻；奇门直接断言跨年符头完整六元组、非法干支有界失败，以及置闰阈值保存与输出重放。四个命例的输出与文档中的命令逐字比对，正文的十神、藏干、起运、大运与流年事实也与引擎对照，专旺候选须披露缺少的组合条件；HTML 示例盘面及大运星运与引擎对照；既有古法定式、节气、未知时辰、大运、飞化、固定盘等回归继续保留。测试证明固定输入符合仓库中的预期，不等于覆盖所有年份、所有流派或独立证明外部 oracle；改动脚本后仍须运行 `python3 -m unittest discover -s tests`。
+**四、排盘边界有回归测试兜底。** `tests/` 共 434 个测试（八字 158 + 梅花 49 + 六爻 43 + 紫微 72 + 奇门 75 + 手机号八星 23 + 命例复现 8 + 发布契约 6）。八字覆盖日期变更线、合婚乙方独立时区与完整双盘、节气秒级边界；梅花锁定农历小月、闰月与换算后年份；六爻锁定两种子时换日口径与默认值兼容；紫微锁定闰月十五、十六分界、晚子时及立春交接时刻；奇门直接断言跨年符头完整六元组、非法干支有界失败，以及置闰阈值保存与输出重放；手机号八星锁定相邻数字对、0/5 修饰、隐私脱敏、短号码、CLI、白话解读库、未分类边界、排序和 HTML 报告边界。四个命例的输出与文档中的命令逐字比对，正文的十神、藏干、起运、大运与流年事实也与引擎对照，专旺候选须披露缺少的组合条件；HTML 示例盘面及大运星运与引擎对照；既有古法定式、节气、未知时辰、大运、飞化、固定盘等回归继续保留。测试证明固定输入符合仓库中的预期，不等于覆盖所有年份、所有流派或独立证明外部 oracle；改动脚本后仍须运行 `./.venv/bin/python -m unittest discover -s tests`。
 
 ---
 
@@ -303,7 +305,7 @@ Windows 如果未安装 `py` 启动器，用已安装的 Python 3 命令替换 `
 
 ### 直接跑脚本（可选）
 
-五个引擎脚本都可以脱离对话单独运行。以下在项目根目录执行，输出的是排盘或起卦结果；推演与 HTML 命书由 Agent 按 `SKILL.md` 完成。
+六个计算引擎脚本都可以脱离对话单独运行。以下在项目根目录执行，输出的是排盘、起卦或数字结构结果；推演与 HTML 命书由 Agent 按 `SKILL.md` 完成。
 
 ```bash
 # 八字排盘
@@ -318,7 +320,15 @@ Windows 如果未安装 `py` 启动器，用已安装的 Python 3 命令替换 `
 ./.venv/bin/python scripts/ziwei.py 2000 8 16 3 30 --gender female --year-divide normal
 # 奇门遁甲排局（时家转盘·拆补法）
 ./.venv/bin/python scripts/qimen.py 2026 7 9 10 30
+# 手机号八星结构（JSON 默认脱敏，适合程序继续处理）
+./.venv/bin/python scripts/phone_energy.py 138-123-45678 --kind mobile --json --pretty
+# 手机号八星结构（排除国内手机号常见首位 1 后再分析）
+./.venv/bin/python scripts/phone_energy.py 13812345678 --exclude-leading-one
+# 手机号八星 HTML 报告（沿用项目命书视觉风格）
+./.venv/bin/python scripts/phone_energy.py 13812345678 --html output/手机号八星报告.html
 ```
+
+手机号八星当前使用 `eight_star_v1` 规则 profile。它按相邻两位数字重叠分析，识别八星组合并单独记录 `0`、`5` 的隐藏或增强修饰。HTML 报告先展示脱敏号码、相邻数字拆解、八星分布、主导主题和尾部结果，再使用独立的 `eight_star_reading_v1` 解读文案，把主题翻译成白话、生活场景、自查问题、沟通句式和七天行动练习。输出默认只保留脱敏号码、数字对和结构统计，不保存完整手机号；这套结构分析不需要出生日期，也不会自动与八字或其他引擎合并。完整输入契约和规则边界见 [`references/24_phone_energy.md`](references/24_phone_energy.md)，解读文案见 [`references/phone_energy_readings_v1.json`](references/phone_energy_readings_v1.json)。
 
 Windows 将上述 `./.venv/bin/python` 换成 `.\.venv\Scripts\python.exe`，其余参数相同。八字的 `--tz` 与 `--lng` 不是其他引擎的通用参数；梅花、六爻、紫微和奇门不自动接收出生地并换算时区，调用前须确定其输入时间口径。
 
@@ -344,14 +354,14 @@ Windows 将上述 `./.venv/bin/python` 换成 `.\.venv\Scripts\python.exe`，其
 
 ## 多 Agent 支持 Works with any agent
 
-技能核心是一层方法论、五个引擎脚本和知识底座，**不绑定任何特定 Agent**。接入时保留完整仓库，包括 `SKILL.md`、`scripts/`、`references/`、依赖清单与许可证；示例、资源和测试也随包保留，便于核对视觉交付和版本。只粘贴提示词或只复制一个脚本，不等于安装了完整技能。
+技能核心是一层方法论、六个计算引擎脚本和知识底座，**不绑定任何特定 Agent**。接入时保留完整仓库，包括 `SKILL.md`、`scripts/`、`references/`、依赖清单与许可证；示例、资源和测试也随包保留，便于核对视觉交付和版本。只粘贴提示词或只复制一个脚本，不等于安装了完整技能。
 
 先按[快速开始](#快速开始-quick-start)安装一次完整仓库和 `.venv`，不同 Agent 可以读取同一个已安装目录，无需重复安装或启动多个 Agent 协作。这里的「多 Agent 支持」指宿主兼容，不是运行时必须委派多个模型。
 
 把以下指引中的路径换成实际安装位置，再接进 Agent 规则文件或直接作为本次任务发给它：
 
 ```text
-读取已安装目录中的 SKILL.md，先按用户目标选择八字、紫微、梅花、六爻或奇门。
+读取已安装目录中的 SKILL.md，先按用户目标选择八字、紫微、梅花、六爻、奇门或手机号八星。
 脚本使用该目录 .venv 的 Python 执行，路径以本机为准；排盘不靠模型手推。
 必要信息集中补齐，先给简短结论，再展开依据与局限。
 命理核心任务默认完成相应 HTML 命书，用户明确只要文字时除外；不自动展开全部延伸功能。
@@ -398,7 +408,7 @@ Windows 将上述 `./.venv/bin/python` 换成 `.\.venv\Scripts\python.exe`，其
 <details>
 <summary><b>通用方式（任意 Agent）</b></summary>
 
-不依赖规则文件也行：直接对 Agent 说"读取 HeiGe-SuanMing/SKILL.md 并严格按它执行，排盘调用 scripts/paipan.py、起卦调用 scripts/meihua.py、装卦调用 scripts/liuyao.py、安星调用 scripts/ziwei.py、排局调用 scripts/qimen.py"，它就能照着跑。五个引擎脚本本身也能脱离对话单独运行（见上方[快速开始](#快速开始-quick-start)）。
+不依赖规则文件也行：直接对 Agent 说"读取 HeiGe-SuanMing/SKILL.md 并严格按它执行，排盘调用 scripts/paipan.py、起卦调用 scripts/meihua.py、装卦调用 scripts/liuyao.py、安星调用 scripts/ziwei.py、排局调用 scripts/qimen.py、手机号结构调用 scripts/phone_energy.py"，它就能照着跑。六个计算引擎脚本本身也能脱离对话单独运行（见上方[快速开始](#快速开始-quick-start)）。
 </details>
 
 ### 为什么推荐 Claude Code + Claude Opus 4.8
@@ -417,7 +427,8 @@ HeiGe-SuanMing/
 │   ├── meihua.py                 # 梅花易数起卦引擎（先天八卦数+互变+体用）
 │   ├── liuyao.py                 # 六爻装卦引擎（纳甲+八宫世应+六亲+六神）
 │   ├── ziwei.py                  # 紫微斗数安星引擎（十二宫+五行局+双星系+四化）
-│   └── qimen.py                  # 奇门遁甲排局引擎（时家转盘·拆补法定局+星门神）
+│   ├── qimen.py                  # 奇门遁甲排局引擎（时家转盘·拆补法定局+星门神）
+│   └── phone_energy.py           # 手机号八星结构引擎（相邻数字对+0/5 修饰）
 ├── references/                   # 命理知识底座，推演时按需调用
 │   ├── 00_gainian_suoyin.md      # 命理概念 → 篇目检索索引（先看这里再按需深读）
 │   ├── 01_paipan_jichu.md
@@ -441,7 +452,10 @@ HeiGe-SuanMing/
 │   ├── 19_liuyao.md              # 六爻纳甲占卜引擎：装卦+用神+旺衰生克应期
 │   ├── 20_ziwei.md               # 紫微斗数安星引擎：十二宫+双星系+四化+命主飞化，命理批一生
 │   ├── 21_qimen.md               # 奇门遁甲排局篇：拆补置闰定局+布盘+值符值使
-│   └── 22_qimen_duanju.md        # 奇门遁甲断局篇：用神+克应81表+格局+应期十三法
+│   ├── 22_qimen_duanju.md        # 奇门遁甲断局篇：用神+克应81表+格局+应期十三法
+│   ├── 24_phone_energy.md        # 手机号八星输入契约、规则 profile 与隐私边界
+│   ├── phone_energy_rules_v1.json # 八星映射与 0/5 修饰规则
+│   └── phone_energy_readings_v1.json # 八星白话解读、生活场景与七天行动文案
 ├── cases/                        # 完整推演范例，照着学怎么把方法落到真盘
 │   ├── 01_shenqiang_caiguan.md   # 身强用财官
 │   ├── 02_shenruo_yinbi.md       # 身弱用印比
@@ -453,6 +467,7 @@ HeiGe-SuanMing/
 │   ├── test_liuyao.py            # 六爻装卦回归测试（京房纳甲定式）
 │   ├── test_ziwei.py             # 紫微安星回归测试（含 iztro 2.5.8 固定锚点）
 │   ├── test_qimen.py             # 奇门排局回归测试（固定逐宫期望与置闰电池）
+│   ├── test_phone_energy.py      # 手机号八星回归测试（数字对、修饰、脱敏、CLI 与白话 HTML 报告）
 │   └── test_release_contract.py  # 最低依赖、版本、文档与打印契约
 ├── examples/
 │   └── 示例-八字命书.html         # 可视化命书样例（虚拟生辰，脱敏教学向）
@@ -481,11 +496,11 @@ HeiGe-SuanMing/
 
 **Layer 2 — the reading follows a fixed methodology, every claim cites its basis.** `SKILL.md` enforces a strict order: strength → useful god → structure → luck cycles → ten-gods/relatives → dimensional readings → guidance plus personalized health-cultivation and color/attire advice (lifestyle, diet, rest, and what to wear, tuned to the useful god, not folk "supplement what's missing"). Each statement notes its reasoning chain, no single-signal verdicts, full reasoning shown.
 
-**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors methods back to canonical texts, including Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, and Sanming Tonghui. `cases/` ships four fully worked, desensitized readings. The suite contains 411 checks: Bazi 158, Meihua 49, Liu Yao 43, Zi Wei Dou Shu 72, Qi Men Dun Jia 75, documented examples 8, and release contracts 6. They cover calendar and solar-term boundaries, unknown-hour output, leap months, midnight conventions, the international date line, partner time zones, fixed iztro anchors, two palace-by-palace Qi Men charts, and a 35-case leap-adjustment battery. These tests establish repository behavior for fixed cases; they do not prove every year, school, or external oracle.
+**Grounded in the classics, checked by tests.** The `references/` knowledge base anchors methods back to canonical texts, including Yuanhai Ziping, Ditian Sui, Qiongtong Baojian, Ziping Zhenquan, and Sanming Tonghui. `cases/` ships four fully worked, desensitized readings. The suite contains 434 checks: Bazi 158, Meihua 49, Liu Yao 43, Zi Wei Dou Shu 72, Qi Men Dun Jia 75, Phone energy 23, documented examples 8, and release contracts 6. They cover calendar and solar-term boundaries, unknown-hour output, leap months, midnight conventions, the international date line, partner time zones, fixed iztro anchors, two palace-by-palace Qi Men charts, a 35-case leap-adjustment battery, and phone-energy pair, privacy, short-number, reading-library, unclassified fallback, ordering, and HTML report boundaries. These tests establish repository behavior for fixed cases; they do not prove every year, school, or external oracle.
 
 **A one-page visual report, delivered by default.** Once the requested reading is done, the agent renders it into a single elegant HTML scroll and opens it for you (just say so if you only want the text version): chart, five-element bars, luck timeline, dimensional readings, personalized health-cultivation and color/attire advice, and a full-screen close-up of the chart's pivotal element. The text stays verbatim-identical to the reading, and fonts fall back gracefully so nothing breaks offline. See the [live preview](https://raw.githack.com/HeiGeAi/HeiGe-SuanMing/main/examples/%E7%A4%BA%E4%BE%8B-%E5%85%AB%E5%AD%97%E5%91%BD%E4%B9%A6.html), built from a fictional birth date. (GitHub serves `.html` as source, so use this link rather than opening the file directly.)
 
-**Runs anywhere, tuned for Claude Code.** The core is `SKILL.md` (methodology), five scripts (`scripts/paipan.py`, `scripts/meihua.py`, `scripts/liuyao.py`, `scripts/ziwei.py`, and `scripts/qimen.py`), plus `references/` (knowledge base). Outputs are deterministic when all effective inputs are explicit; for example, pass `--years` because the Bazi default window intentionally starts from the current Ganzhi year. Any agent that reads local files and runs Python can drive it (Codex, Cursor, Cline, Windsurf, Continue, Copilot, and so on): clone the repo, install deps, and point the agent's rules file at `SKILL.md`. Claude Code + Claude Opus 4.8 remains the author's recommendation, not a cross-model benchmark result or a runtime requirement. Install the complete repository in a virtual environment, then use the interpreter from that environment. Start with the requested goal, collect missing inputs together, and present a short answer before the supporting evidence; optional extensions are not run automatically.
+**Runs anywhere, tuned for Claude Code.** The core is `SKILL.md` (methodology), six scripts (`scripts/paipan.py`, `scripts/meihua.py`, `scripts/liuyao.py`, `scripts/ziwei.py`, `scripts/qimen.py`, and `scripts/phone_energy.py`), plus `references/` (knowledge base). Outputs are deterministic when all effective inputs are explicit; for example, pass `--years` because the Bazi default window intentionally starts from the current Ganzhi year. Any agent that reads local files and runs Python can drive it (Codex, Cursor, Cline, Windsurf, Continue, Copilot, and so on): clone the repo, install deps, and point the agent's rules file at `SKILL.md`. Claude Code + Claude Opus 4.8 remains the author's recommendation, not a cross-model benchmark result or a runtime requirement. Install the complete repository in a virtual environment, then use the interpreter from that environment. Start with the requested goal, collect missing inputs together, and present a short answer before the supporting evidence; optional extensions are not run automatically.
 
 Claude Code setup:
 

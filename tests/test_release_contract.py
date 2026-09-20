@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-class TestReleaseContractV1170(unittest.TestCase):
+class TestReleaseContractV1180(unittest.TestCase):
     def test_declared_minimum_dependency_matches_supported_runtime(self):
         requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
         self.assertRegex(requirements, r"(?m)^lunar_python==1\.4\.8$")
@@ -28,21 +28,22 @@ class TestReleaseContractV1170(unittest.TestCase):
     def test_version_metadata_matches_engines(self):
         skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         expected = {
-            "version": "1.17.0",
+            "version": "1.18.0",
             "engine-version": "1.5.0",
             "meihua-version": "1.2.0",
             "liuyao-version": "1.2.0",
             "ziwei-version": "1.3.0",
             "qimen-version": "1.2.1",
+            "phone-energy-version": "0.2.0",
         }
         for key, version in expected.items():
             self.assertIn(f"  {key}: {version}", skill)
 
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-        self.assertIn("skill-1.17.0", readme)
+        self.assertIn("skill-1.18.0", readme)
         self.assertIn("engine-1.5.0", readme)
-        self.assertRegex(changelog, r"(?m)^## \[1\.17\.0\] - 2026-09-06$")
+        self.assertRegex(changelog, r"(?m)^## \[1\.18\.0\] - 2026-09-20$")
 
         scripts = {
             "paipan.py": "1.5.0",
@@ -55,7 +56,7 @@ class TestReleaseContractV1170(unittest.TestCase):
             source = (ROOT / "scripts" / name).read_text(encoding="utf-8")
             self.assertIn(f'__version__ = "{version}"', source)
 
-    def test_readme_describes_all_five_engines_and_unknown_hour_cli(self):
+    def test_readme_describes_all_six_engines_and_unknown_hour_cli(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         test_count = unittest.defaultTestLoader.discover(str(ROOT / "tests")).countTestCases()
@@ -65,21 +66,24 @@ class TestReleaseContractV1170(unittest.TestCase):
             "六爻": unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_liuyao.py").countTestCases(),
             "紫微": unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_ziwei.py").countTestCases(),
             "奇门": unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_qimen.py").countTestCases(),
+            "手机号八星": unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_phone_energy.py").countTestCases(),
             "命例复现": unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_documented_examples.py").countTestCases(),
             "发布契约": unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_release_contract.py").countTestCases(),
         }
         self.assertNotIn("一层文本加三个脚本", readme)
         self.assertNotIn("text plus a script", readme)
-        for script in ("paipan.py", "meihua.py", "liuyao.py", "ziwei.py", "qimen.py"):
+        for script in ("paipan.py", "meihua.py", "liuyao.py", "ziwei.py", "qimen.py", "phone_energy.py"):
             self.assertIn(f"scripts/{script}", readme)
         self.assertIn("paipan.py 2000 8 16 --gender female", readme)
+        self.assertIn("scripts/phone_energy.py 13812345678 --html", readme)
         self.assertIn(f"`tests/` 共 {test_count} 个测试", readme)
         self.assertIn(f"suite contains {test_count} checks", readme)
         chinese_counts = " + ".join(f"{name} {count}" for name, count in component_counts.items())
         english_counts = (
             f"Bazi {component_counts['八字']}, Meihua {component_counts['梅花']}, "
             f"Liu Yao {component_counts['六爻']}, Zi Wei Dou Shu {component_counts['紫微']}, "
-            f"Qi Men Dun Jia {component_counts['奇门']}, documented examples {component_counts['命例复现']}, "
+            f"Qi Men Dun Jia {component_counts['奇门']}, Phone energy {component_counts['手机号八星']}, "
+            f"documented examples {component_counts['命例复现']}, "
             f"and release contracts {component_counts['发布契约']}"
         )
         self.assertIn(chinese_counts, readme)
@@ -101,6 +105,8 @@ class TestReleaseContractV1170(unittest.TestCase):
         self.assertNotIn('"开源 + 限定非商业用途"', readme)
         self.assertIn("`六煞` 现只包含", readme)
         self.assertIn("`门伏吟`", readme)
+        self.assertIn("phone-energy-version: 0.2.0", skill)
+        self.assertIn("references/24_phone_energy.md", readme)
 
         qimen = (ROOT / "references" / "21_qimen.md").read_text(encoding="utf-8")
         qimen_duanju = (ROOT / "references" / "22_qimen_duanju.md").read_text(encoding="utf-8")
