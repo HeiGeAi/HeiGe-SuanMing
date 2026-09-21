@@ -4,6 +4,14 @@
 
 # HeiGe-SuanMing
 
+> **作者说明**
+>
+> 我是这个项目的作者。开发到当前版本后，我回看这些测算结果时，发现它们在一些时候显得过于准确，容易让人产生很强的现实对应感。出于谨慎，我决定不再继续开发更细、更强的预测功能。
+>
+> 目前项目保留的能力，大家可以自行测算，建议纯当作娱乐和自我观察参考。结果如有相似，请当作巧合，不要把它当成确定的人生判断，也不要据此做医疗、法律、投资或其他重大决定。
+>
+> 希望大家多起一些好的念头，保持行动，给自己创造一个更好的未来。这个项目后续暂不再更新，感谢理解。
+
 <div align="center">
 
 ![Skill](https://img.shields.io/badge/skill-1.18.0-7c3aed.svg)
@@ -530,7 +538,7 @@ This project is a research and study tool for traditional Chinese metaphysics (B
 
 ## 致谢 | Credits
 
-由 [@blakexu](https://github.com/blakexu) 打造。排盘精度由 [lunar_python](https://github.com/6tail/lunar-python) 提供支撑。方法论参考《渊海子平》《滴天髓》《穷通宝鉴》《子平真诠》《三命通会》《神峰通考》《命理约言》等命理经典，源流与公版出处见 [`references/12_dianji_yuanliu.md`](./references/12_dianji_yuanliu.md)。
+排盘精度由 [lunar_python](https://github.com/6tail/lunar-python) 提供支撑。
 
 ## 许可证 | License
 
