@@ -557,4 +557,4 @@ PolyForm Noncommercial 1.0.0 © 2026 [HeiGeAi (Blake Xu)](https://github.com/Hei
 
 ## 更多源码公开工具
 
-本项目属于黑哥 AI 的源码公开工具库。全部项目的清单、用途和协议，见 [heigeai.com/opensource](https://www.heigeai.com/opensource/)。
+本项目属于问问黑哥的源码公开工具库。全部项目的清单、用途和协议，见 [heigeai.com/opensource](https://www.heigeai.com/opensource/)。
